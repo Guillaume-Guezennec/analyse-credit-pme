@@ -39,6 +39,8 @@ class ComptesAnnuels:
     produits_exceptionnels: float = 0.0
     charges_exceptionnelles: float = 0.0
     plus_values_cession: float = 0.0        # produits de cession - VNC des actifs cédés (inclus dans l'exceptionnel)
+    dotations_financieres_exceptionnelles: float = 0.0  # incluses dans les charges financières et exceptionnelles
+    reprises_financieres_exceptionnelles: float = 0.0   # incluses dans les produits financiers et exceptionnels
 
     participation_salaries: float = 0.0
     impot_benefices: float = 0.0

@@ -31,12 +31,15 @@ def test_sig_2023(exercices):
 
 def test_caf_additive_egale_soustractive(exercices):
     """Les deux méthodes de calcul de la CAF doivent donner le même résultat."""
+    exercices[1].dotations_financieres_exceptionnelles = 7_000
+    exercices[1].reprises_financieres_exceptionnelles = 2_000
     for c in exercices:
         sig = calculer_sig(c)
         soustractive = (sig.ebe + c.autres_produits - c.autres_charges + c.produits_financiers
                         - c.charges_financieres + (c.produits_exceptionnels - c.charges_exceptionnelles
                                                    - c.plus_values_cession)
-                        - c.participation_salaries - c.impot_benefices)
+                        - c.participation_salaries - c.impot_benefices
+                        + c.dotations_financieres_exceptionnelles - c.reprises_financieres_exceptionnelles)
         assert calculer_caf(c, sig) == pytest.approx(soustractive)
 
 

@@ -8,8 +8,12 @@ venv/
 # Fichiers système macOS
 .DS_Store
 
+# Identifiants personnels (compte INPI) : ne jamais publier
+.env
+
 # Données réelles : ne jamais publier de comptes clients
 donnees_privees/
+dossiers/
 *.xlsx
 !modeles/*.xlsx
 !exemples/*.xlsx

@@ -44,8 +44,10 @@ def calculer_sig(c: ComptesAnnuels) -> SIG:
 def calculer_caf(c: ComptesAnnuels, sig: SIG | None = None) -> float:
     """Capacité d'autofinancement, méthode additive (à partir du résultat net)."""
     sig = sig or calculer_sig(c)
-    return (sig.resultat_net + c.dotations_amortissements_provisions
-            - c.reprises_provisions - c.plus_values_cession)
+    return (sig.resultat_net
+            + c.dotations_amortissements_provisions + c.dotations_financieres_exceptionnelles
+            - c.reprises_provisions - c.reprises_financieres_exceptionnelles
+            - c.plus_values_cession)
 
 
 @dataclass

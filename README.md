@@ -22,6 +22,24 @@ python analyser.py exemples/menuiserie_azur.xlsx
 python -m pytest
 ```
 
+## Analyser une entreprise à partir de son SIREN
+
+L'outil récupère automatiquement les comptes publics de l'entreprise :
+
+- **identité** (nom, activité, effectif, siège) : [API Recherche d'entreprises](https://recherche-entreprises.api.gouv.fr/docs/), gratuite et sans compte ;
+- **comptes annuels détaillés** : API comptes annuels de l'[INPI](https://data.inpi.fr), gratuite après création d'un compte.
+
+```bash
+cp env.exemple .env       # puis indiquez vos identifiants data.inpi.fr dans .env
+python recuperer.py 552032534
+```
+
+Le programme crée un Excel pré-rempli dans `dossiers/` (jamais publié sur GitHub), signale les points à vérifier, puis lance l'analyse.
+
+**Fiabilité des données.** Chaque bloc (actif, passif, compte de résultat) est contrôlé : la somme des postes doit retrouver le total de la liasse et le résultat net recalculé doit égaler celui déclaré. Le chiffre d'affaires est comparé à celui de l'annuaire des entreprises. Les exercices de durée différente de 12 mois sont signalés.
+
+**Limites.** Environ 45 % des dépôts sont accompagnés d'une déclaration de confidentialité (source : INPI), souvent sur le compte de résultat : l'Excel est alors à compléter avec la liasse fournie par le client. Les comptes simplifiés ne distinguent pas les découverts des emprunts. Les comptes consolidés ne sont pas pris en charge.
+
 ## Analyser une entreprise avec Excel
 
 1. Copiez `modeles/modele_liasse.xlsx` et renommez la copie.
@@ -41,6 +59,8 @@ analyse_credit/
   simulation_pret.py  # mensualités et soutenabilité d'un prêt
   postes.py           # liste des postes du modèle Excel
   import_excel.py     # lecture du modèle Excel
+  export_excel.py     # création d'un Excel pré-rempli
+  sources/            # API Recherche d'entreprises et INPI, conversion de la liasse
 modeles/
   modele_liasse.xlsx  # modèle vierge à remplir
 outils/
@@ -55,7 +75,7 @@ tests/
 
 - [x] Étape 1 : moteur d'analyse et notation
 - [x] Étape 2 : import depuis un modèle Excel de liasse fiscale
-- [ ] Étape 3 : récupération automatique des comptes publics à partir du SIREN (INPI, API Recherche d'entreprises)
+- [x] Étape 3 : récupération automatique des comptes publics à partir du SIREN (INPI, API Recherche d'entreprises)
 - [ ] Étape 4 : application web (Streamlit) avec graphiques
 - [ ] Étape 5 : génération de la note de crédit en PDF
 - [ ] Étape 6 : modèle de prédiction des défaillances (BODACC)

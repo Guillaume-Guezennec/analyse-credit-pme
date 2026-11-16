@@ -30,13 +30,18 @@ def jours(x):
 FEUX = {"vert": "🟢", "orange": "🟠", "rouge": "🔴"}
 
 
-def main(chemin):
+def charger(chemin):
     if chemin.lower().endswith((".xlsx", ".xlsm")):
-        dossier = lire_dossier(chemin)
-    else:
-        with open(chemin, encoding="utf-8") as f:
-            dossier = json.load(f)
+        return lire_dossier(chemin)
+    with open(chemin, encoding="utf-8") as f:
+        return json.load(f)
 
+
+def main(chemin):
+    afficher_rapport(charger(chemin))
+
+
+def afficher_rapport(dossier):
     exercices = [ComptesAnnuels.depuis_dict(e) for e in dossier["exercices"]]
     historique = analyser_historique(exercices)
     dernier = historique[-1]
