@@ -1,12 +1,14 @@
 """Lance l'analyse crédit d'un dossier JSON et affiche le rapport dans le terminal.
 
 Usage : python analyser.py exemples/menuiserie_azur.json
+        python analyser.py exemples/menuiserie_azur.xlsx
 """
 
 import json
 import sys
 
 from analyse_credit import ComptesAnnuels, analyser_historique, noter, simuler
+from analyse_credit.import_excel import lire_dossier
 
 
 def eur(x):
@@ -29,8 +31,11 @@ FEUX = {"vert": "🟢", "orange": "🟠", "rouge": "🔴"}
 
 
 def main(chemin):
-    with open(chemin, encoding="utf-8") as f:
-        dossier = json.load(f)
+    if chemin.lower().endswith((".xlsx", ".xlsm")):
+        dossier = lire_dossier(chemin)
+    else:
+        with open(chemin, encoding="utf-8") as f:
+            dossier = json.load(f)
 
     exercices = [ComptesAnnuels.depuis_dict(e) for e in dossier["exercices"]]
     historique = analyser_historique(exercices)
@@ -38,7 +43,7 @@ def main(chemin):
     comptes_dernier = sorted(exercices, key=lambda e: e.exercice)[-1]
 
     print(f"\n=== {dossier['entreprise']['raison_sociale']} ===")
-    print(dossier["entreprise"]["activite"], "\n")
+    print(dossier["entreprise"].get("activite") or "", "\n")
 
     lignes = [
         ("Chiffre d'affaires", "chiffre_affaires", eur),

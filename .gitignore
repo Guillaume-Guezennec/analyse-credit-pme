@@ -12,3 +12,7 @@ venv/
 donnees_privees/
 *.xlsx
 !modeles/*.xlsx
+!exemples/*.xlsx
+
+# Fichiers temporaires créés par Excel quand un classeur est ouvert
+~$*
