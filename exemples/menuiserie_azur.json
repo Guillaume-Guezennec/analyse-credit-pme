@@ -1,0 +1,73 @@
+{
+  "entreprise": {
+    "raison_sociale": "Menuiserie Azur SAS (entreprise fictive)",
+    "activite": "Fabrication et pose de menuiseries bois et aluminium",
+    "code_naf": "16.23Z",
+    "effectif": 18
+  },
+  "demande_credit": {
+    "objet": "Achat d'un centre d'usinage à commande numérique",
+    "montant": 250000,
+    "taux_annuel": 0.042,
+    "duree_mois": 84
+  },
+  "exercices": [
+    {
+      "exercice": 2023,
+      "ventes_marchandises": 300000, "production_vendue": 2400000,
+      "reprises_provisions": 10000, "autres_produits": 5000,
+      "achats_marchandises": 180000, "variation_stock_marchandises": -5000,
+      "achats_matieres": 950000, "variation_stock_matieres": -10000,
+      "autres_achats_charges_externes": 420000, "impots_taxes": 40000,
+      "salaires": 620000, "charges_sociales": 260000,
+      "dotations_amortissements_provisions": 110000, "autres_charges": 8000,
+      "produits_financiers": 2000, "charges_financieres": 35000,
+      "impot_benefices": 25000,
+      "immobilisations_incorporelles": 50000, "immobilisations_corporelles": 800000,
+      "immobilisations_financieres": 20000, "stocks": 280000, "creances_clients": 520000,
+      "autres_creances": 60000, "disponibilites": 150000, "charges_constatees_avance": 10000,
+      "capitaux_propres": 650000, "provisions_risques_charges": 20000,
+      "emprunts_bancaires": 600000, "concours_bancaires_courants": 30000,
+      "autres_dettes_financieres": 50000, "dettes_fournisseurs": 330000,
+      "dettes_fiscales_sociales": 180000, "autres_dettes": 30000
+    },
+    {
+      "exercice": 2024,
+      "ventes_marchandises": 310000, "production_vendue": 2580000,
+      "reprises_provisions": 5000, "autres_produits": 5000,
+      "achats_marchandises": 190000, "variation_stock_marchandises": 0,
+      "achats_matieres": 1030000, "variation_stock_matieres": -5000,
+      "autres_achats_charges_externes": 450000, "impots_taxes": 42000,
+      "salaires": 670000, "charges_sociales": 280000,
+      "dotations_amortissements_provisions": 120000, "autres_charges": 8000,
+      "produits_financiers": 3000, "charges_financieres": 32000,
+      "impot_benefices": 20000,
+      "immobilisations_incorporelles": 45000, "immobilisations_corporelles": 860000,
+      "immobilisations_financieres": 20000, "stocks": 300000, "creances_clients": 600000,
+      "autres_creances": 65000, "disponibilites": 110000, "charges_constatees_avance": 10000,
+      "capitaux_propres": 696000, "provisions_risques_charges": 20000,
+      "emprunts_bancaires": 610000, "concours_bancaires_courants": 40000,
+      "autres_dettes_financieres": 50000, "dettes_fournisseurs": 360000,
+      "dettes_fiscales_sociales": 195000, "autres_dettes": 39000
+    },
+    {
+      "exercice": 2025,
+      "ventes_marchandises": 300000, "production_vendue": 2690000,
+      "reprises_provisions": 5000, "autres_produits": 4000,
+      "achats_marchandises": 190000, "variation_stock_marchandises": 0,
+      "achats_matieres": 1150000, "variation_stock_matieres": -15000,
+      "autres_achats_charges_externes": 480000, "impots_taxes": 44000,
+      "salaires": 700000, "charges_sociales": 292000,
+      "dotations_amortissements_provisions": 130000, "autres_charges": 9000,
+      "produits_financiers": 1000, "charges_financieres": 45000,
+      "impot_benefices": 0,
+      "immobilisations_incorporelles": 40000, "immobilisations_corporelles": 900000,
+      "immobilisations_financieres": 20000, "stocks": 340000, "creances_clients": 700000,
+      "autres_creances": 70000, "disponibilites": 40000, "charges_constatees_avance": 10000,
+      "capitaux_propres": 671000, "provisions_risques_charges": 20000,
+      "emprunts_bancaires": 680000, "concours_bancaires_courants": 120000,
+      "autres_dettes_financieres": 50000, "dettes_fournisseurs": 380000,
+      "dettes_fiscales_sociales": 170000, "autres_dettes": 29000
+    }
+  ]
+}

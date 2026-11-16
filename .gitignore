@@ -1,0 +1,14 @@
+# Fichiers générés par Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Fichiers système macOS
+.DS_Store
+
+# Données réelles : ne jamais publier de comptes clients
+donnees_privees/
+*.xlsx
+!modeles/*.xlsx
