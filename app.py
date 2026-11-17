@@ -19,6 +19,7 @@ from analyse_credit.commentaires import commenter
 from analyse_credit.export_excel import ecrire_classeur
 from analyse_credit.glossaire import GLOSSAIRE
 from analyse_credit.import_excel import lire_dossier
+from analyse_credit.note_credit import generer_note
 from analyse_credit.scoring import CRITERES
 from analyse_credit.sources.annuaire import nettoyer_siren
 from analyse_credit.sources.http import ErreurSource
@@ -308,6 +309,10 @@ feux = {d.critere.attribut: d.feu for d in notation.details}
 # ----------------------------------------------------------------------------- synthèse
 
 with onglet_synthese:
+    texte_pdf, zone_pdf = st.columns([3, 1], vertical_alignment="center")
+    texte_pdf.caption("Synthèse de l'analyse. La note de crédit complète (3 pages, format comité de crédit) "
+                      "reprend les paramètres de l'onglet Simulation de prêt.")
+    zone_pdf = zone_pdf.empty()
     cols = st.columns([1.25, 1, 1, 1, 1])
     with cols[0]:
         html(ui.carte_note(notation.note, notation.score, notation.libelle, dernier.exercice))
@@ -483,3 +488,17 @@ with onglet_pret:
         st.download_button("Télécharger le tableau mensuel (CSV)",
                            tableau.drop(columns="annee").to_csv(index=False, sep=";", decimal=",").encode("utf-8-sig"),
                            "tableau_amortissement.csv")
+
+# ----------------------------------------------------------------------------- note de crédit PDF
+
+try:
+    pdf = generer_note(dossier, montant, taux, duree, residuelle)
+    nom_pdf = "note_credit_" + "".join(ch if ch.isalnum() else "_" for ch in
+                                       (dossier.get("entreprise", {}).get("raison_sociale") or "pme"))[:40] + ".pdf"
+    zone_pdf.download_button("Télécharger la note de crédit (PDF)", pdf, nom_pdf, mime="application/pdf",
+                             type="primary", width="stretch", key="pdf_synthese")
+    with onglet_pret:
+        st.download_button("Télécharger la note de crédit avec ces paramètres (PDF)", pdf, nom_pdf,
+                           mime="application/pdf", type="primary", key="pdf_pret")
+except Exception as e:  # la note ne doit jamais empêcher l'affichage de l'analyse
+    zone_pdf.caption(f"Note PDF indisponible : {e}")

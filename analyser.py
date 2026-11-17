@@ -2,6 +2,7 @@
 
 Usage : python analyser.py exemples/menuiserie_azur.json
         python analyser.py exemples/menuiserie_azur.xlsx
+        python analyser.py exemples/menuiserie_azur.xlsx --pdf note.pdf
 """
 
 import json
@@ -95,4 +96,14 @@ def afficher_rapport(dossier):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "exemples/menuiserie_azur.json")
+    import argparse
+    parser = argparse.ArgumentParser(description="Analyse crédit d'un dossier JSON ou Excel")
+    parser.add_argument("fichier", nargs="?", default="exemples/menuiserie_azur.json")
+    parser.add_argument("--pdf", metavar="CHEMIN", help="génère aussi la note de crédit au format PDF")
+    args = parser.parse_args()
+    main(args.fichier)
+    if args.pdf:
+        from analyse_credit.note_credit import generer_note
+        with open(args.pdf, "wb") as f:
+            f.write(generer_note(charger(args.fichier)))
+        print(f"📄 Note de crédit enregistrée : {args.pdf}")

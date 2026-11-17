@@ -11,7 +11,8 @@ Outil Python qui reproduit l'analyse financière d'un chargé d'affaires entrepr
 - **Bilan fonctionnel** : FRNG, BFR, trésorerie nette
 - **Ratios bancaires** : autonomie financière, gearing, levier DFN/EBE, capacité de remboursement, délais clients et fournisseurs, liquidité
 - **Notation du risque** de A à E, avec des feux tricolores par critère
-- **Simulation d'un nouveau prêt** : mensualité, tableau d'amortissement, taux de couverture des annuités par la CAF
+- **Simulation d'un nouveau prêt** : mensualité, tableau d'amortissement, taux de couverture des annuités par la CAF, montant maximal finançable
+- **Note de crédit en PDF** (3 pages, format comité de crédit) : synthèse, points clés, analyse sur trois exercices, détail de la notation, capacité de remboursement et proposition d'avis
 
 > Projet réalisé avec l'aide de Claude (Anthropic).
 
@@ -33,6 +34,7 @@ Nécessite Python 3.10 ou plus récent.
 ```bash
 python analyser.py exemples/menuiserie_azur.json
 python analyser.py exemples/menuiserie_azur.xlsx
+python analyser.py exemples/menuiserie_azur.xlsx --pdf note_credit.pdf
 python -m pytest
 ```
 
@@ -80,6 +82,7 @@ analyse_credit/
   export_excel.py     # création d'un Excel pré-rempli
   commentaires.py     # constats rédigés automatiquement à partir des ratios
   glossaire.py        # définition de chaque indicateur (FR / EN)
+  note_credit.py      # note de crédit au format PDF
   sources/            # API Recherche d'entreprises et INPI, conversion de la liasse
 modeles/
   modele_liasse.xlsx  # modèle vierge à remplir
@@ -97,7 +100,7 @@ tests/
 - [x] Étape 2 : import depuis un modèle Excel de liasse fiscale
 - [x] Étape 3 : récupération automatique des comptes publics à partir du SIREN (INPI, API Recherche d'entreprises)
 - [x] Étape 4 : application web (Streamlit) avec graphiques
-- [ ] Étape 5 : génération de la note de crédit en PDF
+- [x] Étape 5 : génération de la note de crédit en PDF
 - [ ] Étape 6 : modèle de prédiction des défaillances (BODACC)
 
 ## Licence

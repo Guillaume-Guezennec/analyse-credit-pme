@@ -39,6 +39,28 @@ def test_application_demarre_sans_erreur():
     assert not at.exception
     contenu = " ".join(m.value for m in at.markdown)
     assert "Note de risque" in contenu and "Point faible" in contenu and "Montant maximal finançable" in contenu
+    assert any("note de crédit" in b.label.lower() for b in at.get("download_button"))
     for source in ("Fichier Excel", "Recherche par SIREN"):
         at.sidebar.radio[0].set_value(source).run()
         assert not at.exception
+
+
+def test_note_de_credit_pdf():
+    from pypdf import PdfReader
+    from analyse_credit.note_credit import generer_note
+    dossier = json.loads((RACINE / "exemples" / "menuiserie_azur.json").read_text(encoding="utf-8"))
+    pdf = generer_note(dossier)
+    assert pdf[:4] == b"%PDF"
+    lecteur = PdfReader(io.BytesIO(pdf))
+    assert len(lecteur.pages) == 3
+    texte = " ".join(page.extract_text() for page in lecteur.pages)
+    for attendu in ("Menuiserie Azur", "Non soutenable", "Effet ciseaux", "Détail de la notation", "Proposition d'avis"):
+        assert attendu in texte
+
+
+def test_note_de_credit_un_seul_exercice():
+    from analyse_credit.note_credit import generer_note
+    dossier = json.loads((RACINE / "exemples" / "menuiserie_azur.json").read_text(encoding="utf-8"))
+    dossier["exercices"] = dossier["exercices"][:1]
+    dossier.pop("demande_credit")
+    assert generer_note(dossier, montant=60_000, taux=0.04, duree_mois=60)[:4] == b"%PDF"
