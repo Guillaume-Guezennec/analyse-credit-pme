@@ -18,7 +18,7 @@ class Constat:
 
 
 def _eur(x: float) -> str:
-    return f"{x:,.0f} €".replace(",", " ")
+    return f"{x:,.0f} €".replace(",", "\u202f").replace("-", "−")
 
 
 def _dec(x: float) -> str:

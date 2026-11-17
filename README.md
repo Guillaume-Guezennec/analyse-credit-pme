@@ -1,5 +1,9 @@
 # Analyse crédit automatisée de PME
 
+[![Ouvrir l'application](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://analyse-credit-pme.streamlit.app)
+
+**Application en ligne : [analyse-credit-pme.streamlit.app](https://analyse-credit-pme.streamlit.app)** — testez l'outil sans rien installer (exemple fictif, import Excel ou recherche par SIREN).
+
 Outil Python qui reproduit l'analyse financière d'un chargé d'affaires entreprises à partir des comptes annuels d'une PME française :
 
 - **Soldes intermédiaires de gestion** (marge commerciale, valeur ajoutée, EBE, résultat d'exploitation, résultat net)
