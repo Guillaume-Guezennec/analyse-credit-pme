@@ -9,14 +9,24 @@ Outil Python qui reproduit l'analyse financière d'un chargé d'affaires entrepr
 - **Notation du risque** de A à E, avec des feux tricolores par critère
 - **Simulation d'un nouveau prêt** : mensualité, tableau d'amortissement, taux de couverture des annuités par la CAF
 
-> Projet réalisé avec l'aide de Claude (Anthropic). Les seuils de notation sont des repères pédagogiques usuels : ils ne reproduisent la grille d'aucune banque et doivent être adaptés au secteur.
+> Projet réalisé avec l'aide de Claude (Anthropic).
+
+![Aperçu de l'application](docs/apercu_synthese.png)
+
+## Application web
+
+Une interface web permet d'utiliser l'outil sans rien installer : choix d'un exemple, import du modèle Excel ou recherche par SIREN ; note de risque, constats rédigés automatiquement (points forts, points faibles, points à surveiller), graphiques interactifs, cascade des soldes intermédiaires de gestion, ratios avec définition et traduction anglaise, simulateur de prêt avec montant maximal finançable et tableau de sensibilité.
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+``` Les seuils de notation sont des repères pédagogiques usuels : ils ne reproduisent la grille d'aucune banque et doivent être adaptés au secteur.
 
 ## Lancer l'analyse
 
 Nécessite Python 3.10 ou plus récent.
 
 ```bash
-pip install -r requirements.txt
 python analyser.py exemples/menuiserie_azur.json
 python analyser.py exemples/menuiserie_azur.xlsx
 python -m pytest
@@ -52,6 +62,10 @@ Un exemple rempli est disponible : `exemples/menuiserie_azur.xlsx`.
 ## Structure
 
 ```
+app.py                # application web (Streamlit)
+analyser.py           # analyse en ligne de commande
+recuperer.py          # récupération par SIREN en ligne de commande
+interface/            # style, couleurs et composants visuels de l'application
 analyse_credit/
   modele.py           # postes de la liasse fiscale simplifiée
   analyse.py          # SIG, CAF, bilan fonctionnel, ratios
@@ -60,6 +74,8 @@ analyse_credit/
   postes.py           # liste des postes du modèle Excel
   import_excel.py     # lecture du modèle Excel
   export_excel.py     # création d'un Excel pré-rempli
+  commentaires.py     # constats rédigés automatiquement à partir des ratios
+  glossaire.py        # définition de chaque indicateur (FR / EN)
   sources/            # API Recherche d'entreprises et INPI, conversion de la liasse
 modeles/
   modele_liasse.xlsx  # modèle vierge à remplir
@@ -76,7 +92,7 @@ tests/
 - [x] Étape 1 : moteur d'analyse et notation
 - [x] Étape 2 : import depuis un modèle Excel de liasse fiscale
 - [x] Étape 3 : récupération automatique des comptes publics à partir du SIREN (INPI, API Recherche d'entreprises)
-- [ ] Étape 4 : application web (Streamlit) avec graphiques
+- [x] Étape 4 : application web (Streamlit) avec graphiques
 - [ ] Étape 5 : génération de la note de crédit en PDF
 - [ ] Étape 6 : modèle de prédiction des défaillances (BODACC)
 

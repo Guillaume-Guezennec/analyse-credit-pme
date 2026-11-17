@@ -76,3 +76,14 @@ def test_ebe_negatif_plafonne_la_note():
                        capitaux_propres=50_000, disponibilites=50_000)
     r = analyser_historique([c])[0]
     assert noter(r).note == "E"
+
+
+def test_montant_maximal_respecte_la_couverture(exercices):
+    from analyse_credit import montant_maximal, simuler
+    r = analyser_historique(exercices)[0]  # 2023 : CAF de 184 000 €
+    existantes = 650_000 / 5
+    m = montant_maximal(r.caf, existantes, 0.04, 84)
+    assert m > 0
+    s = simuler(r, 650_000, m, 0.04, 84)
+    assert s.taux_couverture == pytest.approx(1.25, abs=1e-6)
+    assert montant_maximal(10_000, existantes, 0.04, 84) == 0

@@ -1,0 +1,35 @@
+"""Définitions des indicateurs, affichées dans l'application et reprises dans la note de crédit."""
+
+GLOSSAIRE = {
+    "chiffre_affaires": ("Chiffre d'affaires", "Revenue",
+                         "Ventes de marchandises et production vendue (biens et services) sur l'exercice."),
+    "croissance_ca": ("Croissance du CA", "Revenue growth", "Variation du chiffre d'affaires par rapport à l'exercice précédent."),
+    "ebe": ("EBE", "EBITDA (proche)",
+            "Excédent brut d'exploitation : ce que rapporte l'activité avant amortissements, frais financiers et impôt. "
+            "C'est la ressource qui sert à rembourser les dettes."),
+    "taux_ebe": ("Taux d'EBE", "EBITDA margin", "EBE / chiffre d'affaires : part de chaque euro vendu conservée après les charges d'exploitation."),
+    "resultat_net": ("Résultat net", "Net income", "Bénéfice ou perte de l'exercice, après toutes les charges et l'impôt."),
+    "rentabilite_nette": ("Rentabilité nette", "Net margin", "Résultat net / chiffre d'affaires."),
+    "caf": ("CAF", "Cash flow from operations (proche)",
+            "Capacité d'autofinancement : trésorerie dégagée par l'activité, disponible pour rembourser les emprunts et investir."),
+    "frng": ("Fonds de roulement (FRNG)", "Working capital (bilanciel)",
+             "Ressources stables (capitaux propres, provisions, dettes financières à long terme) moins les immobilisations. "
+             "Excédent de financement durable disponible pour le cycle d'exploitation."),
+    "bfr": ("Besoin en fonds de roulement (BFR)", "Working capital requirement",
+            "Stocks et créances clients moins dettes fournisseurs, fiscales et sociales : l'argent immobilisé par le cycle d'exploitation."),
+    "bfr_jours_ca": ("BFR en jours de CA", "WCR in days of sales", "BFR / CA × 360 : nombre de jours de chiffre d'affaires immobilisés dans le cycle."),
+    "tresorerie_nette": ("Trésorerie nette", "Net cash", "Disponibilités et placements moins découverts bancaires. Égale à FRNG − BFR."),
+    "dette_financiere_nette": ("Dette financière nette", "Net debt", "Dettes financières (emprunts, découverts, comptes courants) moins la trésorerie disponible."),
+    "autonomie_financiere": ("Autonomie financière", "Equity ratio", "Capitaux propres / total du bilan. Au-delà de 25-30 %, la structure est jugée solide."),
+    "gearing": ("Gearing", "Net debt to equity", "Dette financière nette / capitaux propres."),
+    "rentabilite_capitaux_propres": ("Rentabilité des capitaux propres", "Return on equity (ROE)", "Résultat net / capitaux propres."),
+    "levier_dfn_ebe": ("Levier DFN / EBE", "Net debt / EBITDA", "Années d'EBE nécessaires pour rembourser la dette nette. Au-delà de 4, endettement élevé."),
+    "capacite_remboursement": ("Capacité de remboursement", "Debt repayment capacity",
+                               "Dettes financières à moyen et long terme / CAF, en années. Repère courant : moins de 3 à 4 ans."),
+    "poids_charges_financieres": ("Frais financiers / EBE", "Interest burden", "Part de l'EBE absorbée par les intérêts. Au-delà de 30 %, vigilance."),
+    "delai_clients_jours": ("Délai clients", "Days sales outstanding (DSO)", "Créances clients / CA TTC × 360 : délai moyen de paiement des clients."),
+    "delai_fournisseurs_jours": ("Délai fournisseurs", "Days payables outstanding (DPO)", "Dettes fournisseurs / achats TTC × 360 : délai moyen de paiement des fournisseurs."),
+    "liquidite_generale": ("Liquidité générale", "Current ratio", "Actif circulant / dettes à court terme. En dessous de 1, risque de tension de trésorerie."),
+    "taux_couverture": ("Taux de couverture des annuités", "Debt service coverage ratio (DSCR)",
+                        "CAF / remboursements annuels (capital et intérêts). Seuil retenu : 1,25."),
+}

@@ -10,6 +10,7 @@ venv/
 
 # Identifiants personnels (compte INPI) : ne jamais publier
 .env
+.streamlit/secrets.toml
 
 # Données réelles : ne jamais publier de comptes clients
 donnees_privees/
