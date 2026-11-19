@@ -52,9 +52,10 @@ def test_note_de_credit_pdf():
     pdf = generer_note(dossier)
     assert pdf[:4] == b"%PDF"
     lecteur = PdfReader(io.BytesIO(pdf))
-    assert len(lecteur.pages) == 3
+    assert len(lecteur.pages) == 4
     texte = " ".join(page.extract_text() for page in lecteur.pages)
-    for attendu in ("Menuiserie Azur", "Non soutenable", "Effet ciseaux", "Détail de la notation", "Proposition d'avis"):
+    for attendu in ("Menuiserie Azur", "Non soutenable", "Effet ciseaux", "Détail de la notation", "Proposition d'avis",
+                    "Score statistique de défaillance"):
         assert attendu in texte
 
 

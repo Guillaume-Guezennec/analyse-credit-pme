@@ -140,3 +140,22 @@ def amortissement(par_an):
     fig = _mise_en_page(fig, "Échéancier annuel du nouveau prêt", "k€", hauteur=320)
     fig.update_layout(legend=dict(traceorder="normal"))
     return fig
+
+
+def deciles_defaillance(deciles: list[dict]):
+    """Taux de défaillance observé par décile de score, sur les années de test."""
+    x = [str(d["decile"]) for d in deciles]
+    y = [d["taux_observe"] * 100 for d in deciles]
+    couleurs = [SERIES[0]["fond"]] * (len(x) - 1) + [SERIES[1]["fond"]]
+    traits = [SERIES[0]["trait"]] * (len(x) - 1) + [SERIES[1]["trait"]]
+    fig = go.Figure(go.Bar(
+        x=x, y=y, marker=dict(color=couleurs, line=dict(color=traits, width=1.2), cornerradius=4),
+        customdata=[[d["bilans"], d["defaillances"]] for d in deciles],
+        text=[_fr(v, 1) + " %" for v in y], textposition="outside", textfont=dict(size=11, color=ENCRE), cliponaxis=False,
+        hovertemplate="<b>Décile %{x}</b><br>%{y:.2f} % de défaillances<br>%{customdata[1]:,} sur %{customdata[0]:,} bilans"
+                      "<extra></extra>"))
+    fig.update_layout(showlegend=False, hovermode="closest")
+    fig = _mise_en_page(fig, "Taux de défaillance observé par décile de score (2022-2023)", "%", hauteur=320)
+    fig.update_xaxes(title=dict(text="Décile de score : 1 = entreprises les plus sûres, 10 = les plus risquées",
+                                font=dict(size=12)))
+    return fig

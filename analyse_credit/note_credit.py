@@ -1,4 +1,4 @@
-"""Génération de la note de crédit au format PDF (3 pages, présentation de comité de crédit).
+"""Génération de la note de crédit au format PDF (4 pages, présentation de comité de crédit).
 
 Usage :
     from analyse_credit.note_credit import generer_note
@@ -24,6 +24,7 @@ from reportlab.platypus import (KeepTogether, PageBreak, Paragraph, SimpleDocTem
 
 from .analyse import analyser_historique
 from .commentaires import commenter
+from .defaillance import prevoir
 from .modele import ComptesAnnuels
 from .scoring import noter
 from .simulation_pret import montant_maximal, simuler
@@ -253,6 +254,7 @@ def generer_note(dossier: dict, montant: float | None = None, taux: float | None
     comptes = sorted(exercices, key=lambda e: e.exercice)[-1]
     notation = noter(dernier)
     constats = commenter(historique)
+    prevision = prevoir(dernier, comptes)
     ent = dossier.get("entreprise", {})
     demande = dossier.get("demande_credit") or {}
     montant = montant if montant is not None else float(demande.get("montant") or 150_000)
@@ -327,7 +329,8 @@ def generer_note(dossier: dict, montant: float | None = None, taux: float | None
                      else "Aucune capacité d'emprunt supplémentaire"), "corps", textColor=colors.HexColor(encre_fin))]
     cles = [["Chiffre d'affaires", _t(keur(dernier.chiffre_affaires))], ["EBE", _t(f"{keur(dernier.ebe)} ({pct(dernier.taux_ebe)})")],
             ["CAF", _t(keur(dernier.caf))], ["Trésorerie nette", _t(keur(dernier.tresorerie_nette))],
-            ["Dettes / CAF", _t(nb(dernier.capacite_remboursement, " ans"))]]
+            ["Dettes / CAF", _t(nb(dernier.capacite_remboursement, " ans"))],
+            ["Défaillance à 2 ans", _t(pct(prevision.probabilite))]]
     t_cles = tableau(cles, [30 * mm, 34 * mm], droite=(1,), entete=False,
                      styles_sup=[("TEXTCOLOR", (0, 0), (0, -1), ENCRE_2), ("TOPPADDING", (0, 0), (-1, -1), 3),
                                  ("BOTTOMPADDING", (0, 0), (-1, -1), 3)])
@@ -400,6 +403,29 @@ def generer_note(dossier: dict, montant: float | None = None, taux: float | None
                   "autonomie financière favorable au-delà de 30 %. Barème : A >= 80, B >= 65, C >= 50, D >= 35, E < 35."),
                "petit", spaceBefore=4))
 
+    h.append(titre_section("Score statistique de défaillance"))
+
+    def val(f):
+        if f.valeur is None:
+            return "n.d."
+        if f.variable == "log_ca":
+            return "CA " + keur(10 ** f.valeur)
+        if f.unite == "%":
+            return _nombre(f.valeur, 1) + "\xa0%"
+        if f.unite.startswith("jours"):
+            return _nombre(f.valeur) + "\xa0j"
+        return _nombre(f.valeur, 2)
+
+    fac = ", ".join(f"{f.libelle.split(' (')[0].lower()} ({val(f)})" for f in prevision.aggravants[:3]) or "aucun"
+    att = ", ".join(f"{f.libelle.split(' (')[0].lower()} ({val(f)})" for f in prevision.attenuants[:2]) or "aucun"
+    h.append(bloc(prevision.couleur,
+                  f"Probabilité d'ouverture d'un redressement ou d'une liquidation judiciaire dans les 24 mois : "
+                  f"{pct(prevision.probabilite)}, pour une moyenne de {pct(prevision.taux_moyen)} chez les PME "
+                  f"({prevision.classe.lower()}). Facteurs aggravants : {fac}. Facteurs atténuants : {att}.",
+                  "Grille de score entraînée sur 1,4 million de bilans de PME (AUC de 0,81)"))
+    h.append(P(_t("Ce score mesure le risque de procédure collective ; la note de A à E mesure la capacité à porter un "
+                  "nouveau crédit. Les deux peuvent diverger."), "petit", spaceBefore=3))
+
     h.append(titre_section("Capacité de remboursement"))
     lignes_fin = [
         ["", "Montant annuel"],
@@ -413,14 +439,17 @@ def generer_note(dossier: dict, montant: float | None = None, taux: float | None
     ]
     h.append(tableau(lignes_fin, [LARGEUR - 40 * mm, 40 * mm], droite=(1,)))
 
+    # ---------------- Page 4 : décision
+    h.append(PageBreak())
     h.append(titre_section("Proposition d'avis"))
     couleur_avis, texte_avis = proposition_avis(notation, sim, maximum, constats, montant)
     h.append(bloc(couleur_avis, texte_avis, "Proposition générée par l'outil, à valider"))
     h.append(Spacer(1, 8))
-    lignes_vides = [[P("Avis du chargé d'affaires", "petit", fontName="Helvetica-Bold")]] + [[""] for _ in range(3)] + [
+    lignes_vides = [[P("Avis du chargé d'affaires", "petit", fontName="Helvetica-Bold")]] + [[""] for _ in range(8)] + [
+        [P("Décision proposée :   favorable  /  favorable sous conditions  /  défavorable", "petit")],
         [P("Date et signature :", "petit")]]
-    avis = Table(lignes_vides, colWidths=[LARGEUR], rowHeights=[16] + [18] * 3 + [18])
-    avis.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, TRAIT), ("LINEBELOW", (0, 1), (-1, 3), 0.4, TRAIT),
+    avis = Table(lignes_vides, colWidths=[LARGEUR], rowHeights=[18] + [20] * 8 + [22, 30])
+    avis.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, TRAIT), ("LINEBELOW", (0, 1), (-1, 9), 0.4, TRAIT),
                               ("LEFTPADDING", (0, 0), (-1, -1), 8), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
     h.append(KeepTogether(avis))
 
@@ -429,7 +458,10 @@ def generer_note(dossier: dict, montant: float | None = None, taux: float | None
                   "d'autofinancement (méthode additive), bilan fonctionnel et ratios. La notation repose sur sept critères "
                   "pondérés dont les seuils sont des repères pédagogiques usuels, à adapter au secteur. Sans échéancier "
                   "détaillé, les remboursements existants sont estimés. L'analyse est uniquement financière : elle ne "
-                  "remplace ni la connaissance du dirigeant et du marché, ni l'étude des garanties et de l'historique bancaire."),
+                  "remplace ni la connaissance du dirigeant et du marché, ni l'étude des garanties et de l'historique bancaire. "
+                  "Le score de défaillance est une grille de score entraînée sur les bilans publics de PME (base Ratios "
+                  "financiers BCE/INPI) et les procédures collectives du BODACC, validée sur les exercices 2022 et 2023. "
+                  "Les ratios de cette base suivent leurs propres définitions : la probabilité est un ordre de grandeur."),
                "petit"))
 
     doc.build(h, onFirstPage=decor, onLaterPages=decor)

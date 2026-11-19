@@ -12,7 +12,7 @@ Outil Python qui reproduit l'analyse financière d'un chargé d'affaires entrepr
 - **Ratios bancaires** : autonomie financière, gearing, levier DFN/EBE, capacité de remboursement, délais clients et fournisseurs, liquidité
 - **Notation du risque** de A à E, avec des feux tricolores par critère
 - **Simulation d'un nouveau prêt** : mensualité, tableau d'amortissement, taux de couverture des annuités par la CAF, montant maximal finançable
-- **Note de crédit en PDF** (3 pages, format comité de crédit) : synthèse, points clés, analyse sur trois exercices, détail de la notation, capacité de remboursement et proposition d'avis
+- **Note de crédit en PDF** (4 pages, format comité de crédit) : synthèse, points clés, analyse sur trois exercices, détail de la notation, score de défaillance, capacité de remboursement et proposition d'avis
 
 > Projet réalisé avec l'aide de Claude (Anthropic).
 
@@ -36,6 +36,21 @@ python analyser.py exemples/menuiserie_azur.json
 python analyser.py exemples/menuiserie_azur.xlsx
 python analyser.py exemples/menuiserie_azur.xlsx --pdf note_credit.pdf
 python -m pytest
+```
+
+## Prédiction des défaillances
+
+Un **score statistique** estime la probabilité qu'une PME fasse l'objet d'un redressement ou d'une liquidation judiciaire dans les 24 mois. C'est une grille de score (ratios découpés en tranches, poids estimés par régression logistique), entraînée sur **1 435 768 bilans** de PME publiés en open data (Ratios financiers BCE/INPI) croisés avec **15 353 défaillances** publiées au BODACC.
+
+Validation sur des années jamais vues par le modèle (exercices 2022 et 2023) : **AUC de 0,81**, et les 10 % d'entreprises jugées les plus risquées regroupent **44 % des défaillances**. Un boosting d'arbres fait à peine mieux (AUC de 0,84) mais n'est pas explicable : la grille de score est retenue. Rapport complet : [docs/modele_defaillance.md](docs/modele_defaillance.md).
+
+Pour reconstruire le modèle à partir des données publiques :
+
+```bash
+pip install scikit-learn pyarrow
+python outils/telecharger_donnees.py   # environ 180 Mo, dossier donnees/ non publié
+python outils/construire_base.py
+python outils/entrainer_modele.py
 ```
 
 ## Analyser une entreprise à partir de son SIREN
@@ -83,11 +98,14 @@ analyse_credit/
   commentaires.py     # constats rédigés automatiquement à partir des ratios
   glossaire.py        # définition de chaque indicateur (FR / EN)
   note_credit.py      # note de crédit au format PDF
+  defaillance.py      # score statistique de défaillance
+  modele_defaillance.json  # paramètres du modèle (tranches et poids)
   sources/            # API Recherche d'entreprises et INPI, conversion de la liasse
 modeles/
   modele_liasse.xlsx  # modèle vierge à remplir
 outils/
   generer_modele.py   # régénère le modèle et l'exemple Excel
+  telecharger_donnees.py, construire_base.py, entrainer_modele.py  # modèle de défaillance
 exemples/
   menuiserie_azur.json  # dossier fictif sur 3 exercices
   menuiserie_azur.xlsx  # le même dossier au format Excel
@@ -101,7 +119,7 @@ tests/
 - [x] Étape 3 : récupération automatique des comptes publics à partir du SIREN (INPI, API Recherche d'entreprises)
 - [x] Étape 4 : application web (Streamlit) avec graphiques
 - [x] Étape 5 : génération de la note de crédit en PDF
-- [ ] Étape 6 : modèle de prédiction des défaillances (BODACC)
+- [x] Étape 6 : modèle de prédiction des défaillances (BODACC)
 
 ## Licence
 

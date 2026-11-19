@@ -118,3 +118,19 @@ def etapes(liste: list[tuple[str, str]]) -> str:
     return '<div class="etapes">' + "".join(
         f'<div class="etape"><div class="num">{i}</div><div class="t">{escape(t)}</div><div class="d">{escape(d)}</div></div>'
         for i, (t, d) in enumerate(liste, start=1)) + "</div>"
+
+
+def facteurs(liste, couleur: str, maximum: float) -> str:
+    """Liste de facteurs explicatifs avec une barre proportionnelle à leur influence."""
+    if not liste:
+        return '<div class="detail" style="color:#8A96A3">Aucun facteur marquant.</div>'
+    a = APPRECIATIONS[couleur]
+    lignes = []
+    for libelle, valeur, influence in liste:
+        largeur = max(8, min(100, abs(influence) / (maximum or 1) * 100))
+        lignes.append(
+            f'<div style="margin:0 0 10px 0"><div style="display:flex;justify-content:space-between;gap:10px;'
+            f'font-size:.9rem"><span>{escape(libelle)}</span><span style="color:#52606D;white-space:nowrap">'
+            f'{escape(valeur)}</span></div><div class="jauge" style="margin-top:4px"><div style="width:{largeur:.0f}%;'
+            f'background:{a["accent"]}"></div></div></div>')
+    return "".join(lignes)

@@ -1,0 +1,429 @@
+{
+ "description": "Grille de score de défaillance à 24 mois (ouverture de redressement ou de liquidation judiciaire), PME françaises de 0,1 à 100 M€ de chiffre d'affaires.",
+ "sources": [
+  "Ratios financiers BCE/INPI (data.economie.gouv.fr)",
+  "BODACC, procédures collectives (DILA)"
+ ],
+ "date_entrainement": "2026-11-19",
+ "nb_bilans": 1435768,
+ "nb_defaillances": 15353,
+ "taux_reference": 0.01466,
+ "constante": -2.33187,
+ "variables": {
+  "marge_ebe": {
+   "libelle": "Marge d'EBE (EBE / CA)",
+   "unite": "%",
+   "bornes": [
+    -7.523,
+    -0.215,
+    2.079,
+    4.073,
+    6.254,
+    8.913,
+    12.546,
+    18.469,
+    32.391
+   ],
+   "poids": [
+    0.29237,
+    0.23902,
+    -0.03065,
+    -0.04775,
+    -0.14574,
+    -0.29999,
+    -0.24569,
+    -0.44251,
+    -0.66609,
+    -1.28568,
+    0.0
+   ],
+   "reference": -0.26281,
+   "plancher": null
+  },
+  "rn_sur_ca": {
+   "libelle": "Rentabilité nette (résultat net / CA)",
+   "unite": "%",
+   "bornes": [
+    -7.9043,
+    -0.2239,
+    0.9934,
+    2.3647,
+    3.9863,
+    6.1075,
+    9.1954,
+    14.7644,
+    30.6221
+   ],
+   "poids": [
+    0.31206,
+    0.15092,
+    -0.06207,
+    -0.22212,
+    -0.27796,
+    -0.36595,
+    -0.37394,
+    -0.3452,
+    -0.55058,
+    -0.89789,
+    0.0
+   ],
+   "reference": -0.26279,
+   "plancher": null
+  },
+  "autonomie_financiere": {
+   "libelle": "Autonomie financière",
+   "unite": "%",
+   "bornes": [
+    0.0,
+    7.588,
+    17.012,
+    25.973,
+    34.745,
+    43.802,
+    53.457,
+    64.348,
+    78.119
+   ],
+   "poids": [
+    0.0,
+    -0.11434,
+    -0.05673,
+    -0.1127,
+    -0.2249,
+    -0.28665,
+    -0.38098,
+    -0.46267,
+    -0.52464,
+    -0.46292,
+    -0.00619
+   ],
+   "reference": -0.27363,
+   "plancher": 0.0
+  },
+  "taux_d_endettement": {
+   "libelle": "Endettement (dettes financières / capitaux propres)",
+   "unite": "%",
+   "bornes": [
+    0.0,
+    0.021,
+    2.317,
+    10.412,
+    23.497,
+    42.817,
+    73.15,
+    130.113,
+    295.412
+   ],
+   "poids": [
+    0.47463,
+    -0.44312,
+    -0.81441,
+    -0.69391,
+    -0.65169,
+    -0.45961,
+    -0.27407,
+    -0.10858,
+    0.10116,
+    0.2538,
+    -0.01692
+   ],
+   "reference": -0.27386,
+   "plancher": null
+  },
+  "ratio_de_liquidite": {
+   "libelle": "Liquidité générale",
+   "unite": "%",
+   "bornes": [
+    74.66,
+    112.02,
+    138.56,
+    166.539,
+    199.31,
+    241.295,
+    302.3489,
+    411.7552,
+    729.913
+   ],
+   "poids": [
+    0.67879,
+    0.40239,
+    0.19819,
+    -0.06901,
+    -0.14924,
+    -0.33524,
+    -0.48105,
+    -0.70778,
+    -0.91017,
+    -1.28075,
+    0.02112
+   ],
+   "reference": -0.26453,
+   "plancher": null
+  },
+  "poids_bfr_exploitation_sur_ca_jours": {
+   "libelle": "BFR d'exploitation",
+   "unite": "jours de CA",
+   "bornes": [
+    -65.2493,
+    -18.032,
+    4.1031,
+    23.4808,
+    43.545,
+    66.474,
+    94.6399,
+    137.881,
+    264.527
+   ],
+   "poids": [
+    -0.70154,
+    -0.50885,
+    -0.41094,
+    -0.26944,
+    -0.23054,
+    -0.20597,
+    -0.05878,
+    -0.04259,
+    0.03257,
+    -0.23664,
+    0.0
+   ],
+   "reference": -0.26279,
+   "plancher": null
+  },
+  "credit_clients_jours": {
+   "libelle": "Délai clients",
+   "unite": "jours",
+   "bornes": [
+    0.0,
+    1.249,
+    8.751,
+    22.09,
+    35.641,
+    50.075,
+    65.526,
+    87.2486,
+    133.314
+   ],
+   "poids": [
+    -0.00231,
+    -0.54189,
+    -0.6146,
+    -0.44469,
+    -0.25183,
+    -0.23899,
+    -0.19421,
+    -0.19552,
+    -0.09469,
+    -0.05399,
+    0.0
+   ],
+   "reference": -0.31683,
+   "plancher": null
+  },
+  "credit_fournisseurs_jours": {
+   "libelle": "Délai fournisseurs",
+   "unite": "jours",
+   "bornes": [
+    9.941,
+    19.94,
+    28.645,
+    37.355,
+    46.997,
+    58.301,
+    73.034,
+    96.785,
+    154.848
+   ],
+   "poids": [
+    0.00721,
+    -0.19099,
+    -0.28118,
+    -0.29027,
+    -0.27273,
+    -0.24617,
+    -0.24685,
+    -0.25991,
+    -0.28094,
+    -0.55531,
+    -0.01558
+   ],
+   "reference": -0.26103,
+   "plancher": null
+  },
+  "croissance_ca": {
+   "libelle": "Croissance du chiffre d'affaires",
+   "unite": "%",
+   "bornes": [
+    -23.5451,
+    -11.2189,
+    -4.3363,
+    0.0,
+    3.6843,
+    8.1786,
+    14.1555,
+    23.4869,
+    44.218
+   ],
+   "poids": [
+    -0.07498,
+    -0.04773,
+    -0.18453,
+    -0.45612,
+    -0.46891,
+    -0.53989,
+    -0.37047,
+    -0.33581,
+    -0.19331,
+    -0.01076,
+    0.04978
+   ],
+   "reference": -0.19245,
+   "plancher": null
+  },
+  "log_ca": {
+   "libelle": "Taille de l'entreprise",
+   "unite": "log10 du CA",
+   "bornes": [
+    5.1645,
+    5.3243,
+    5.4942,
+    5.6814,
+    5.8862,
+    6.0855,
+    6.3113,
+    6.5907,
+    7.0034
+   ],
+   "poids": [
+    -0.08454,
+    -0.03774,
+    0.02285,
+    0.0087,
+    -0.06468,
+    -0.10164,
+    -0.17828,
+    -0.39123,
+    -0.68643,
+    -1.11973,
+    0.0
+   ],
+   "reference": -0.26279,
+   "plancher": null
+  }
+ },
+ "validation": {
+  "apprentissage": [
+   2019,
+   2020,
+   2021
+  ],
+  "test": [
+   2022,
+   2023
+  ],
+  "grille_de_score": {
+   "auc": 0.8127,
+   "gini": 0.6255,
+   "ks": 0.4834,
+   "auc_pr": 0.0618,
+   "brier": 0.01414,
+   "capture_10pct": 0.4427,
+   "taux_observe": 0.01466,
+   "taux_predit": 0.00838
+  },
+  "boosting_comparaison": {
+   "auc": 0.8371,
+   "gini": 0.6742,
+   "ks": 0.5213,
+   "auc_pr": 0.0792,
+   "brier": 0.01403,
+   "capture_10pct": 0.4855,
+   "taux_observe": 0.01466,
+   "taux_predit": 0.0082
+  },
+  "par_annee": {
+   "2022": {
+    "auc": 0.819,
+    "gini": 0.6381,
+    "ks": 0.4908,
+    "auc_pr": 0.0633,
+    "brier": 0.0135,
+    "capture_10pct": 0.4524,
+    "taux_observe": 0.01401,
+    "taux_predit": 0.00852
+   },
+   "2023": {
+    "auc": 0.807,
+    "gini": 0.6141,
+    "ks": 0.4786,
+    "auc_pr": 0.0611,
+    "brier": 0.01483,
+    "capture_10pct": 0.4327,
+    "taux_observe": 0.01535,
+    "taux_predit": 0.00823
+   }
+  },
+  "deciles": [
+   {
+    "decile": 1,
+    "bilans": 51060,
+    "defaillances": 33,
+    "taux_observe": 0.00065
+   },
+   {
+    "decile": 2,
+    "bilans": 51059,
+    "defaillances": 78,
+    "taux_observe": 0.00153
+   },
+   {
+    "decile": 3,
+    "bilans": 51059,
+    "defaillances": 131,
+    "taux_observe": 0.00257
+   },
+   {
+    "decile": 4,
+    "bilans": 51059,
+    "defaillances": 171,
+    "taux_observe": 0.00335
+   },
+   {
+    "decile": 5,
+    "bilans": 51060,
+    "defaillances": 270,
+    "taux_observe": 0.00529
+   },
+   {
+    "decile": 6,
+    "bilans": 51059,
+    "defaillances": 388,
+    "taux_observe": 0.0076
+   },
+   {
+    "decile": 7,
+    "bilans": 51059,
+    "defaillances": 607,
+    "taux_observe": 0.01189
+   },
+   {
+    "decile": 8,
+    "bilans": 51059,
+    "defaillances": 963,
+    "taux_observe": 0.01886
+   },
+   {
+    "decile": 9,
+    "bilans": 51059,
+    "defaillances": 1529,
+    "taux_observe": 0.02995
+   },
+   {
+    "decile": 10,
+    "bilans": 51060,
+    "defaillances": 3313,
+    "taux_observe": 0.06488
+   }
+  ]
+ }
+}

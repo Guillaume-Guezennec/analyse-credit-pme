@@ -16,6 +16,7 @@ import streamlit as st
 from analyse_credit import (ComptesAnnuels, analyser_historique, calculer_sig, montant_maximal, noter, simuler,
                             tableau_amortissement)
 from analyse_credit.commentaires import commenter
+from analyse_credit.defaillance import charger_modele, prevoir
 from analyse_credit.export_excel import ecrire_classeur
 from analyse_credit.glossaire import GLOSSAIRE
 from analyse_credit.import_excel import lire_dossier
@@ -81,6 +82,18 @@ FAMILLES = {
                                  "capacite_remboursement", "poids_charges_financieres"],
     "Cycle d'exploitation et liquidité": ["delai_clients_jours", "delai_fournisseurs_jours", "liquidite_generale"],
 }
+
+
+def valeur_facteur(f) -> str:
+    if f.valeur is None:
+        return "non disponible"
+    if f.variable == "log_ca":
+        return "CA de " + keur(10 ** f.valeur)
+    if f.unite == "%":
+        return f"{f.valeur:.1f} %".replace(".", ",").replace("-", "−")
+    if f.unite.startswith("jours"):
+        return f"{f.valeur:.0f} j" + (" de CA" if "CA" in f.unite else "")
+    return nb(f.valeur)
 
 
 def variation(attr, actuel, precedent, fmt, hausse_favorable=True):
@@ -228,9 +241,34 @@ with onglet_projet:
         ("Données", "SIREN (annuaire de l'État et INPI) ou modèle Excel de liasse fiscale."),
         ("Contrôles", "Bilan équilibré, totaux de la liasse retrouvés, résultat net recalculé."),
         ("Analyse", "SIG, CAF, bilan fonctionnel et une vingtaine de ratios sur plusieurs années."),
-        ("Notation", "Sept critères pondérés, note de A à E et constats rédigés automatiquement."),
+        ("Notation", "Sept critères pondérés, note de A à E, constats rédigés et score statistique de défaillance."),
         ("Décision", "Simulation du prêt, taux de couverture et montant maximal finançable."),
     ]))
+
+    html(ui.section("Modèle de prédiction des défaillances"))
+    m = charger_modele()
+    v = m["validation"]["grille_de_score"]
+    nb_bilans = f"{m['nb_bilans']:,}".replace(",", "\u202f")
+    nb_def = f"{m['nb_defaillances']:,}".replace(",", "\u202f")
+    html('<div class="projet"><p>Le score statistique est une <b>grille de score</b>, la méthode classique des banques : '
+         'chaque ratio est découpé en dix tranches et chaque tranche reçoit un poids, estimé par une régression '
+         f'logistique sur <b>{nb_bilans} bilans</b> de PME (base publique Ratios financiers BCE/INPI) croisés avec '
+         f'<b>{nb_def} défaillances</b> publiées au BODACC. Le modèle a été entraîné sur les exercices 2019 à 2021, '
+         'puis testé sur 2022 et 2023, deux années qu\'il n\'avait jamais vues.</p></div>')
+    st.write("")
+    k1, k2, k3, k4 = st.columns(4)
+    for col, contenu in zip((k1, k2, k3, k4), (
+            ui.carte("AUC sur les années de test", nb(v["auc"], ""), "0,5 = hasard, 1 = classement parfait"),
+            ui.carte("Défaillances repérées", pct(v["capture_10pct"]), "dans les 10 % de bilans jugés les plus risqués"),
+            ui.carte("Taux moyen 2022-2023", pct(m["taux_reference"]), "de PME défaillantes dans les 2 ans"),
+            ui.carte("Comparaison", nb(m["validation"]["boosting_comparaison"]["auc"], ""),
+                     "AUC d'un boosting d'arbres, plus précis mais non explicable"))):
+        with col:
+            html(contenu)
+    st.plotly_chart(gr.deciles_defaillance(m["validation"]["deciles"]), width="stretch")
+    st.caption("Lecture : parmi les 10 % d'entreprises jugées les plus risquées (décile 10), environ 6,5 % ont fait "
+               "défaut dans les 2 ans, contre moins de 0,1 % pour les 10 % les plus sûres. Rapport complet : "
+               f"[docs/modele_defaillance.md]({DEPOT_GITHUB}/blob/main/docs/modele_defaillance.md).")
 
     html(ui.section("Grille de notation"))
     lignes_grille = []
@@ -269,7 +307,8 @@ with onglet_projet:
                 "Comptes détaillés : API comptes annuels de l'[INPI](https://data.inpi.fr) · "
                 f"Code, tests et documentation : [GitHub]({DEPOT_GITHUB})")
     html("".join(f'<span class="puce-techno">{t}</span>' for t in
-                 ["Python", "Streamlit", "Plotly", "pandas", "openpyxl", "API de l'État", "API INPI", "pytest",
+                 ["Python", "Streamlit", "Plotly", "pandas", "scikit-learn", "openpyxl", "API de l'État", "API INPI",
+                  "BODACC", "pytest",
                   "Git et GitHub", "Claude (Anthropic)"]))
 
 # ----------------------------------------------------------------------------- absence de données
@@ -303,6 +342,7 @@ dernier = historique[-1]
 precedent = historique[-2] if len(historique) > 1 else None
 comptes_dernier = sorted(exercices, key=lambda e: e.exercice)[-1]
 notation = noter(dernier)
+prevision = prevoir(dernier, comptes_dernier)
 annees = [r.exercice for r in historique]
 feux = {d.critere.attribut: d.feu for d in notation.details}
 
@@ -310,7 +350,7 @@ feux = {d.critere.attribut: d.feu for d in notation.details}
 
 with onglet_synthese:
     texte_pdf, zone_pdf = st.columns([3, 1], vertical_alignment="center")
-    texte_pdf.caption("Synthèse de l'analyse. La note de crédit complète (3 pages, format comité de crédit) "
+    texte_pdf.caption("Synthèse de l'analyse. La note de crédit complète (4 pages, format comité de crédit) "
                       "reprend les paramètres de l'onglet Simulation de prêt.")
     zone_pdf = zone_pdf.empty()
     cols = st.columns([1.25, 1, 1, 1, 1])
@@ -334,6 +374,31 @@ with onglet_synthese:
     for i, c in enumerate(constats):
         with (g if i % 2 == 0 else d):
             html(ui.bloc_constat(c.sens, c.texte))
+
+    html(ui.section("Score statistique de défaillance"))
+    st.caption("Probabilité d'ouverture d'un redressement ou d'une liquidation judiciaire dans les 24 mois, estimée par "
+               "une grille de score entraînée sur 1,4 million de bilans de PME et les procédures collectives publiées "
+               "au BODACC. Méthode et validation dans l'onglet Projet et méthode.")
+    s1, s2, s3 = st.columns([1.1, 1.45, 1.45])
+    with s1:
+        html(ui.carte("Probabilité de défaillance à 2 ans", pct(prevision.probabilite),
+                      f"Moyenne des PME : {pct(prevision.taux_moyen)}",
+                      f"{prevision.classe} ({nb(prevision.multiple_moyenne, ' x')} la moyenne)",
+                      prevision.couleur == "vert"))
+    plus_fort = max([abs(f.contribution) for f in prevision.facteurs] + [0.01])
+    with s2:
+        st.markdown("**Ce qui augmente le risque**")
+        html(ui.facteurs([(f.libelle, valeur_facteur(f), f.contribution) for f in prevision.aggravants[:4]],
+                         "rouge", plus_fort))
+    with s3:
+        st.markdown("**Ce qui réduit le risque**")
+        html(ui.facteurs([(f.libelle, valeur_facteur(f), f.contribution) for f in prevision.attenuants[:4]],
+                         "vert", plus_fort))
+    html(ui.bloc("orange",
+                 "La note de A à E mesure la capacité à porter un nouveau crédit (rentabilité, endettement, couverture "
+                 "des remboursements). Le score statistique mesure le risque de procédure collective à 2 ans, observé sur "
+                 "des entreprises comparables. Les deux peuvent diverger : une entreprise solide peut être trop endettée "
+                 "pour un prêt supplémentaire, sans être pour autant proche de la défaillance.", "Bien lire ces deux indicateurs"))
 
     html(ui.section("Évolution sur la période"))
     c1, c2 = st.columns(2)

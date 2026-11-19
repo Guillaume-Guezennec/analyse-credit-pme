@@ -21,3 +21,6 @@ dossiers/
 
 # Fichiers temporaires créés par Excel quand un classeur est ouvert
 ~$*
+
+# Données publiques téléchargées pour entraîner le modèle (volumineuses, recréables)
+donnees/
