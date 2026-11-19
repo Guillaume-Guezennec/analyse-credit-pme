@@ -102,6 +102,33 @@ table.tab .def {{ font-size: .78rem; color: {ENCRE_SECONDAIRE}; margin-top: 2px;
 .projet {{ background: linear-gradient(135deg, #F4F9FC 0%, #FBF7F2 100%); border: 1px solid #E4E8EC; border-radius: 14px; padding: 20px 24px; }}
 .projet p {{ color: {ENCRE}; line-height: 1.55; margin: 0 0 10px 0; }}
 .signature {{ font-size: .85rem; color: {ENCRE_SECONDAIRE}; }}
-section[data-testid="stSidebar"] .resume {{ font-size: .84rem; color: {ENCRE_SECONDAIRE}; line-height: 1.45; }}
+section[data-testid="stSidebar"] .resume {{ font-size: .84rem; color: {ENCRE_SECONDAIRE}; line-height: 1.45; margin-bottom: 10px; }}
+
+/* ---------- Barre latérale : marque et volets dépliants ---------- */
+section[data-testid="stSidebar"] .marque {{ display: flex; align-items: center; gap: 12px; margin: 4px 0 18px 2px; }}
+section[data-testid="stSidebar"] .marque-titre {{ font-weight: 700; font-size: 1.05rem; color: {ENCRE}; line-height: 1.2; }}
+section[data-testid="stSidebar"] .marque-sous {{ font-size: .78rem; color: {ENCRE_SECONDAIRE}; }}
+section[data-testid="stSidebar"] [data-testid="stExpander"] details {{ background: #FFFFFF; border: 1px solid #E4E8EC;
+    border-radius: 12px; box-shadow: 0 1px 2px rgba(31,41,51,.04); margin-bottom: 10px; overflow: hidden; }}
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary {{ padding: 12px 14px; font-weight: 600;
+    transition: background .15s ease; }}
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary:hover {{ background: #F7F9FA; }}
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary p {{ font-size: .95rem; font-weight: 600; color: {ENCRE}; }}
+section[data-testid="stSidebar"] [data-testid="stExpander"] details[open] summary {{ border-bottom: 1px solid #EEF1F4; }}
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary [data-testid="stIconMaterial"] {{ color: #5E9DC2; }}
+section[data-testid="stSidebar"] [data-testid="stExpanderDetails"] {{ padding-top: 12px; }}
+section[data-testid="stSidebar"] hr {{ display: none; }}
+
+/* Choix de la source : des cartes plutôt que des boutons radio */
+section[data-testid="stSidebar"] [role="radiogroup"] {{ display: flex; flex-direction: column; gap: 6px; width: 100%; }}
+section[data-testid="stSidebar"] [role="radiogroup"] > div {{ width: 100%; }}
+section[data-testid="stSidebar"] [role="radiogroup"] label {{ width: 100% !important; box-sizing: border-box; margin: 0; padding: 9px 12px;
+    border: 1px solid #E4E8EC; border-radius: 10px; background: #FFFFFF; transition: all .15s ease; }}
+section[data-testid="stSidebar"] [role="radiogroup"] label:hover {{ border-color: #A8D0E6; background: #F7FAFC; }}
+section[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {{ border-color: #5E9DC2;
+    background: #F1F7FB; box-shadow: inset 3px 0 0 #5E9DC2; }}
+section[data-testid="stSidebar"] .mode-emploi {{ padding-left: 18px; margin: 0; font-size: .85rem; color: {ENCRE_SECONDAIRE}; }}
+section[data-testid="stSidebar"] .mode-emploi li {{ margin-bottom: 8px; line-height: 1.4; }}
+section[data-testid="stSidebar"] .mode-emploi b {{ color: {ENCRE}; }}
 </style>
 """

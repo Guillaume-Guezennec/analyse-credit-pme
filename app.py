@@ -142,67 +142,83 @@ def classeur_en_memoire(dossier=None, avertissements=None) -> bytes:
 # ----------------------------------------------------------------------------- barre latérale
 
 with st.sidebar:
-    st.subheader("Données à analyser")
-    source = st.radio("Source des comptes", ["Exemple (entreprise fictive)", "Fichier Excel", "Recherche par SIREN"],
-                      label_visibility="collapsed")
-    dossier, fiche, avertissements, info = None, {}, [], None
+    html('<div class="marque"><svg width="34" height="34" viewBox="0 0 34 34"><rect width="34" height="34" rx="9" '
+         'fill="#EEF1F4"/><rect x="7" y="17" width="5" height="10" rx="1.5" fill="#A8D0E6"/><rect x="14.5" y="12" '
+         'width="5" height="15" rx="1.5" fill="#FFC8A2"/><rect x="22" y="8" width="5" height="19" rx="1.5" '
+         'fill="#C7DDB5"/></svg><div><div class="marque-titre">Analyse crédit PME</div>'
+         '<div class="marque-sous">Aide à la décision de crédit</div></div></div>')
 
-    if source.startswith("Exemple"):
-        dossier = charger_exemple()
-        st.caption("Menuiserie Azur : PME fictive de 18 salariés dont la rentabilité se dégrade malgré la croissance.")
+    with st.expander("Données à analyser", expanded=True, icon=":material/folder_open:"):
+        source = st.radio("Source des comptes", ["Exemple (entreprise fictive)", "Fichier Excel", "Recherche par SIREN"],
+                          label_visibility="collapsed")
+        dossier, fiche, avertissements, info = None, {}, [], None
 
-    elif source == "Fichier Excel":
-        st.download_button("Télécharger le modèle vierge", (RACINE / "modeles" / "modele_liasse.xlsx").read_bytes(),
-                           "modele_liasse.xlsx", width="stretch")
-        fichier = st.file_uploader("Déposer le modèle rempli", type=["xlsx"])
-        st.caption("Le fichier est analysé en mémoire et n'est pas conservé.")
-        if fichier:
-            try:
-                dossier = lire_dossier(fichier)
-            except (ValueError, KeyError) as e:
-                st.error(f"Fichier non lisible : {e}")
+        if source.startswith("Exemple"):
+            dossier = charger_exemple()
+            st.caption("Menuiserie Azur : PME fictive de 18 salariés dont la rentabilité se dégrade malgré la croissance.")
 
-    else:
-        saisie = st.text_input("SIREN ou SIRET", placeholder="552 032 534")
-        avec_inpi = identifiants_inpi() is not None
-        if saisie:
-            try:
-                siren = nettoyer_siren(saisie)
-                with st.spinner("Interrogation de l'annuaire des entreprises et de l'INPI…"):
-                    r = chercher_siren(siren, avec_inpi)
-                fiche, avertissements = r["fiche"], r["avertissements"]
-                if r["dossier"]["exercices"]:
-                    dossier = r["dossier"]
-                    if not r["complets"]:
-                        info = ("Compte de résultat indisponible (confidentiel) : téléchargez l'Excel pré-rempli, "
-                                "complétez-le, puis importez-le.")
-                else:
-                    info = r["erreur_inpi"]
-            except ValueError as e:
-                st.error(str(e))
-        if not avec_inpi:
-            st.caption("Version de démonstration : seule l'identité de l'entreprise est récupérée. Les comptes "
-                       "détaillés nécessitent un accès à l'API de l'INPI (voir l'onglet Projet et méthode).")
+        elif source == "Fichier Excel":
+            st.download_button("Télécharger le modèle vierge", (RACINE / "modeles" / "modele_liasse.xlsx").read_bytes(),
+                               "modele_liasse.xlsx", width="stretch")
+            fichier = st.file_uploader("Déposer le modèle rempli", type=["xlsx"])
+            st.caption("Le fichier est analysé en mémoire et n'est pas conservé.")
+            if fichier:
+                try:
+                    dossier = lire_dossier(fichier)
+                except (ValueError, KeyError) as e:
+                    st.error(f"Fichier non lisible : {e}")
 
-    st.divider()
-    st.subheader("Retraitements bancaires")
-    avec_retraitements = st.toggle("Appliquer les retraitements", value=True,
-                                   help="Crédit-bail traité comme un emprunt, comptes courants bloqués reclassés en "
-                                        "quasi-fonds propres, dividendes déduits de la CAF. Nécessite les informations "
-                                        "d'annexe de l'onglet Comptes du modèle Excel.")
-    with st.expander("Réglages"):
-        rt_cb = st.checkbox("Crédit-bail", value=True)
-        rt_cc = st.checkbox("Comptes courants bloqués", value=True)
-        rt_div = st.checkbox("Dividendes", value=True)
+        else:
+            saisie = st.text_input("SIREN ou SIRET", placeholder="552 032 534")
+            avec_inpi = identifiants_inpi() is not None
+            if saisie:
+                try:
+                    siren = nettoyer_siren(saisie)
+                    with st.spinner("Interrogation de l'annuaire des entreprises et de l'INPI…"):
+                        r = chercher_siren(siren, avec_inpi)
+                    fiche, avertissements = r["fiche"], r["avertissements"]
+                    if r["dossier"]["exercices"]:
+                        dossier = r["dossier"]
+                        if not r["complets"]:
+                            info = ("Compte de résultat indisponible (confidentiel) : téléchargez l'Excel pré-rempli, "
+                                    "complétez-le, puis importez-le.")
+                    else:
+                        info = r["erreur_inpi"]
+                except ValueError as e:
+                    st.error(str(e))
+            if not avec_inpi:
+                st.caption("Version de démonstration : seule l'identité de l'entreprise est récupérée. Les comptes "
+                           "détaillés nécessitent un accès à l'API de l'INPI (voir l'onglet Projet et méthode).")
+
+    with st.expander("Retraitements bancaires", icon=":material/tune:"):
+        st.caption("Passer des comptes publiés à la vision du banquier : crédit-bail traité comme un emprunt, comptes "
+                   "courants bloqués reclassés en quasi-fonds propres, dividendes déduits de la CAF.")
+        avec_retraitements = st.toggle("Appliquer les retraitements", value=True)
+        rt_cb = st.checkbox("Crédit-bail", value=True, disabled=not avec_retraitements)
+        rt_cc = st.checkbox("Comptes courants bloqués", value=True, disabled=not avec_retraitements)
+        rt_div = st.checkbox("Dividendes", value=True, disabled=not avec_retraitements)
         taux_cb = st.number_input("Taux implicite du crédit-bail (%)", 0.0, 15.0, 4.0, 0.5,
+                                  disabled=not avec_retraitements,
                                   help="Sert à séparer les loyers entre intérêts et amortissement.") / 100
     parametres_rt = Parametres(rt_cb, rt_cc, rt_div, taux_cb) if avec_retraitements else None
 
-    st.divider()
-    st.markdown("**Le projet en bref**")
-    html('<div class="resume">Un outil qui reproduit l\'analyse d\'un chargé d\'affaires entreprises : des comptes '
-         'annuels à la décision de crédit, en quelques secondes et avec des contrôles à chaque étape.</div>')
-    st.markdown(f"[Code source sur GitHub]({DEPOT_GITHUB}) · Réalisé avec l'aide de Claude (Anthropic)")
+    with st.expander("Mode d'emploi", icon=":material/menu_book:"):
+        html('<ol class="mode-emploi">'
+             '<li><b>Choisir les données</b> : l\'exemple, un modèle Excel rempli à partir de la liasse, ou un SIREN.</li>'
+             '<li><b>Lire la Synthèse</b> : note, points forts et points faibles, score de défaillance.</li>'
+             '<li><b>Approfondir</b> dans Ratios détaillés : retraitements, cascade des SIG, comparaison au secteur.</li>'
+             '<li><b>Tester le financement</b> dans Simulation de prêt, scénario de crise compris, puis télécharger '
+             'la note de crédit en PDF.</li></ol>')
+
+    with st.expander("Le projet en bref", icon=":material/info:"):
+        html('<div class="resume">Un outil qui reproduit l\'analyse d\'un chargé d\'affaires entreprises : des comptes '
+             'annuels à la décision de crédit, en quelques secondes et avec des contrôles à chaque étape. '
+             'Réalisé par Guillaume Guezennec avec l\'aide de Claude (Anthropic).</div>')
+        st.link_button("Code source sur GitHub", DEPOT_GITHUB, width="stretch", icon=":material/code:")
+        st.link_button("Rapport du modèle de défaillance", f"{DEPOT_GITHUB}/blob/main/docs/modele_defaillance.md",
+                       width="stretch", icon=":material/description:")
+
+    st.caption("Données publiques : annuaire des entreprises, INPI, BODACC, Bercy. Outil pédagogique.")
 
 
 # ----------------------------------------------------------------------------- calculs
