@@ -61,6 +61,15 @@ SECTIONS = [
         ("autres_dettes", "Autres dettes", "Dettes sur immobilisations, divers"),
         ("produits_constates_avance", "Produits constatés d'avance", ""),
     ]),
+    ("INFORMATIONS COMPLÉMENTAIRES (annexe) — pour les retraitements bancaires", [
+        ("redevances_credit_bail", "Redevances de crédit-bail de l'exercice",
+         "Loyers de leasing payés, déjà inclus dans les charges externes (renvois de la liasse ou annexe)"),
+        ("encours_credit_bail", "Redevances de crédit-bail restant à payer",
+         "Engagements de crédit-bail indiqués en annexe, à la clôture"),
+        ("comptes_courants_bloques", "dont comptes courants d'associés bloqués",
+         "Part bloquée par convention (souvent au profit de la banque), incluse dans les dettes financières diverses"),
+        ("dividendes_verses", "Dividendes versés pendant l'exercice", "Distribution décidée sur le résultat précédent"),
+    ]),
 ]
 
 INFOS_ENTREPRISE = [

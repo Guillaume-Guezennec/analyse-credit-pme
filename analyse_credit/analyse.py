@@ -47,7 +47,7 @@ def calculer_caf(c: ComptesAnnuels, sig: SIG | None = None) -> float:
     return (sig.resultat_net
             + c.dotations_amortissements_provisions + c.dotations_financieres_exceptionnelles
             - c.reprises_provisions - c.reprises_financieres_exceptionnelles
-            - c.plus_values_cession)
+            - c.plus_values_cession - c.dividendes_deduits_caf)
 
 
 @dataclass

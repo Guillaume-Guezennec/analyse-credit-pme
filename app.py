@@ -18,6 +18,7 @@ from analyse_credit import (ComptesAnnuels, analyser_historique, calculer_sig, m
 from analyse_credit.commentaires import commenter
 from analyse_credit.defaillance import charger_modele, prevoir
 from analyse_credit.secteurs import comparer, constats_sectoriels
+from analyse_credit.retraitements import Parametres, retraiter_tout
 from analyse_credit.export_excel import ecrire_classeur
 from analyse_credit.glossaire import GLOSSAIRE
 from analyse_credit.import_excel import lire_dossier
@@ -183,6 +184,20 @@ with st.sidebar:
                        "détaillés nécessitent un accès à l'API de l'INPI (voir l'onglet Projet et méthode).")
 
     st.divider()
+    st.subheader("Retraitements bancaires")
+    avec_retraitements = st.toggle("Appliquer les retraitements", value=True,
+                                   help="Crédit-bail traité comme un emprunt, comptes courants bloqués reclassés en "
+                                        "quasi-fonds propres, dividendes déduits de la CAF. Nécessite les informations "
+                                        "d'annexe de l'onglet Comptes du modèle Excel.")
+    with st.expander("Réglages"):
+        rt_cb = st.checkbox("Crédit-bail", value=True)
+        rt_cc = st.checkbox("Comptes courants bloqués", value=True)
+        rt_div = st.checkbox("Dividendes", value=True)
+        taux_cb = st.number_input("Taux implicite du crédit-bail (%)", 0.0, 15.0, 4.0, 0.5,
+                                  help="Sert à séparer les loyers entre intérêts et amortissement.") / 100
+    parametres_rt = Parametres(rt_cb, rt_cc, rt_div, taux_cb) if avec_retraitements else None
+
+    st.divider()
     st.markdown("**Le projet en bref**")
     html('<div class="resume">Un outil qui reproduit l\'analyse d\'un chargé d\'affaires entreprises : des comptes '
          'annuels à la décision de crédit, en quelques secondes et avec des contrôles à chaque étape.</div>')
@@ -192,10 +207,19 @@ with st.sidebar:
 # ----------------------------------------------------------------------------- calculs
 
 historique, exercices, erreur = [], [], None
+exercices_bruts, historique_brut, resultats_rt = [], [], []
 if dossier:
     try:
-        exercices = [ComptesAnnuels.depuis_dict(e) for e in dossier["exercices"]]
-        historique = analyser_historique(exercices)
+        exercices_bruts = sorted((ComptesAnnuels.depuis_dict(e) for e in dossier["exercices"]), key=lambda e: e.exercice)
+        historique_brut = analyser_historique(exercices_bruts)
+        exercices, historique = exercices_bruts, historique_brut
+        if parametres_rt:
+            resultats_rt = retraiter_tout(exercices_bruts, parametres_rt)
+            if any(r.applique for r in resultats_rt):
+                exercices = [r.comptes for r in resultats_rt]
+                historique = analyser_historique(exercices)
+            else:
+                resultats_rt = []
     except (ValueError, KeyError, TypeError) as e:
         erreur = f"Analyse impossible : {e}"
 
@@ -218,6 +242,8 @@ elif dossier:
 if historique:
     etiquettes.append((f"Exercices {historique[0].exercice} à {historique[-1].exercice}"
                        if len(historique) > 1 else f"Exercice {historique[0].exercice}", False))
+if resultats_rt:
+    etiquettes.append(("Comptes retraités", False))
 html(ui.entete(TITRE, SOUS_TITRE, etiquettes))
 
 onglets = st.tabs(["Synthèse", "Ratios détaillés", "Simulation de prêt", "Projet et méthode"])
@@ -343,9 +369,10 @@ dernier = historique[-1]
 precedent = historique[-2] if len(historique) > 1 else None
 comptes_dernier = sorted(exercices, key=lambda e: e.exercice)[-1]
 notation = noter(dernier)
-prevision = prevoir(dernier, comptes_dernier)
+# Score de défaillance et comparaison sectorielle : sur les comptes bruts, comme les données publiques
+prevision = prevoir(historique_brut[-1], exercices_bruts[-1])
 code_naf = (dossier.get("entreprise", {}).get("code_naf") or fiche.get("code_naf") or "")
-comparaison = comparer(dernier, comptes_dernier, code_naf)
+comparaison = comparer(historique_brut[-1], exercices_bruts[-1], code_naf)
 annees = [r.exercice for r in historique]
 feux = {d.critere.attribut: d.feu for d in notation.details}
 
@@ -433,6 +460,38 @@ with onglet_synthese:
 # ----------------------------------------------------------------------------- ratios détaillés
 
 with onglet_ratios:
+    html(ui.section("Retraitements bancaires"))
+    if resultats_rt:
+        st.caption("Les comptes sont retraités pour refléter la vision du banquier. Tous les ratios, la notation et "
+                   "la simulation de prêt utilisent les comptes retraités ; la comparaison sectorielle et le score de "
+                   "défaillance restent calculés sur les comptes bruts, comme les données publiques auxquelles ils se "
+                   "comparent. Désactivable dans la barre latérale.")
+        rb, rr = historique_brut[-1], historique[-1]
+        nb_, nr_ = noter(rb), noter(rr)
+        lignes_av = []
+        for lib, attr, fmt in [("EBE", "ebe", keur), ("CAF", "caf", keur), ("Résultat net", "resultat_net", keur),
+                               ("Dette financière nette", "dette_financiere_nette", keur),
+                               ("Autonomie financière", "autonomie_financiere", pct),
+                               ("Capacité de remboursement", "capacite_remboursement", lambda x: nb(x, " ans")),
+                               ("Levier DFN / EBE", "levier_dfn_ebe", lambda x: nb(x, " ans"))]:
+            lignes_av.append([escape(lib), fmt(getattr(rb, attr)), f"<b>{fmt(getattr(rr, attr))}</b>"])
+        lignes_av.append(["<b>Note</b>", f"{nb_.note} ({nb_.score:.0f}/100)", f"<b>{nr_.note} ({nr_.score:.0f}/100)</b>"])
+        ga, da = st.columns([1, 1.15])
+        with ga:
+            st.markdown(f"**Effet sur les indicateurs {rr.exercice}**")
+            html(ui.tableau([("Indicateur", False), ("Comptes bruts", True), ("Retraités", True)], lignes_av))
+        with da:
+            st.markdown(f"**Écritures de retraitement {rr.exercice}**")
+            lignes_aj = [[escape(a.retraitement), escape(a.poste),
+                          ("+" if a.montant > 0 else "") + keur(a.montant)] for a in resultats_rt[-1].ajustements]
+            html(ui.tableau([("Retraitement", False), ("Poste", False), ("Montant", True)], lignes_aj)
+                 if lignes_aj else '<div class="detail">Aucun retraitement pour cet exercice.</div>')
+    elif parametres_rt is None:
+        st.info("Retraitements désactivés : l'analyse porte sur les comptes tels qu'ils sont publiés.")
+    else:
+        st.info("Aucune information d'annexe (crédit-bail, comptes courants bloqués, dividendes) : les comptes ne "
+                "sont pas retraités. Ces informations se saisissent dans le modèle Excel.")
+
     sig = calculer_sig(comptes_dernier)
     c = comptes_dernier
     production = c.ventes_marchandises + sig.production_exercice
@@ -587,7 +646,7 @@ with onglet_pret:
 # ----------------------------------------------------------------------------- note de crédit PDF
 
 try:
-    pdf = generer_note(dossier, montant, taux, duree, residuelle)
+    pdf = generer_note(dossier, montant, taux, duree, residuelle, retraitements=parametres_rt)
     nom_pdf = "note_credit_" + "".join(ch if ch.isalnum() else "_" for ch in
                                        (dossier.get("entreprise", {}).get("raison_sociale") or "pme"))[:40] + ".pdf"
     zone_pdf.download_button("Télécharger la note de crédit (PDF)", pdf, nom_pdf, mime="application/pdf",

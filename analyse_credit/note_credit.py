@@ -26,6 +26,7 @@ from .analyse import analyser_historique
 from .commentaires import commenter
 from .defaillance import prevoir
 from .secteurs import comparer, constats_sectoriels
+from .retraitements import Parametres, retraiter_tout
 from .modele import ComptesAnnuels
 from .scoring import noter
 from .simulation_pret import montant_maximal, simuler
@@ -248,15 +249,26 @@ def proposition_avis(notation, simulation, maximum, constats, montant) -> tuple[
 
 def generer_note(dossier: dict, montant: float | None = None, taux: float | None = None,
                  duree_mois: int | None = None, duree_residuelle_ans: float = 5.0,
-                 auteur: str = "", date_note: date | None = None) -> bytes:
-    exercices = [ComptesAnnuels.depuis_dict(e) for e in dossier["exercices"]]
-    historique = analyser_historique(exercices)
+                 auteur: str = "", date_note: date | None = None,
+                 retraitements: Parametres | None = Parametres()) -> bytes:
+    """retraitements=None : analyse sur les comptes bruts, sans retraitement bancaire."""
+    bruts = sorted((ComptesAnnuels.depuis_dict(e) for e in dossier["exercices"]), key=lambda e: e.exercice)
+    historique_brut = analyser_historique(bruts)
+    exercices, historique, resultats_rt = bruts, historique_brut, []
+    if retraitements is not None:
+        resultats_rt = retraiter_tout(bruts, retraitements)
+        if any(r.applique for r in resultats_rt):
+            exercices = [r.comptes for r in resultats_rt]
+            historique = analyser_historique(exercices)
+        else:
+            resultats_rt = []
     dernier = historique[-1]
-    comptes = sorted(exercices, key=lambda e: e.exercice)[-1]
+    comptes = exercices[-1]
     notation = noter(dernier)
     constats = commenter(historique)
-    prevision = prevoir(dernier, comptes)
-    comparaison = comparer(dernier, comptes, (dossier.get("entreprise") or {}).get("code_naf"))
+    # Score et comparaison sectorielle sur les comptes bruts, comme les données publiques de référence
+    prevision = prevoir(historique_brut[-1], bruts[-1])
+    comparaison = comparer(historique_brut[-1], bruts[-1], (dossier.get("entreprise") or {}).get("code_naf"))
     constats = constats + constats_sectoriels(comparaison)
     ent = dossier.get("entreprise", {})
     demande = dossier.get("demande_credit") or {}
@@ -429,8 +441,27 @@ def generer_note(dossier: dict, montant: float | None = None, taux: float | None
                   "nouveau crédit. Les deux peuvent diverger."), "petit", spaceBefore=3))
 
 
-    # ---------------- Page 4 : notation et capacité de remboursement
+    # ---------------- Page 4 : retraitements, notation et capacité de remboursement
     h.append(PageBreak())
+    if resultats_rt:
+        h.append(titre_section(f"Retraitements bancaires {dernier.exercice}"))
+        rb, nb_ = historique_brut[-1], noter(historique_brut[-1])
+        lignes_rt = [["Indicateur", "Comptes bruts", "Retraités"]]
+        for lib, attr, fmt in [("EBE", "ebe", keur), ("CAF", "caf", keur),
+                               ("Dette financière nette", "dette_financiere_nette", keur),
+                               ("Autonomie financière", "autonomie_financiere", pct),
+                               ("Capacité de remboursement", "capacite_remboursement", lambda x: nb(x, " ans"))]:
+            lignes_rt.append([_t(lib), _t(fmt(getattr(rb, attr))), _t(fmt(getattr(dernier, attr)))])
+        lignes_rt.append(["<b>Note</b>", _t(f"{nb_.note} ({nb_.score:.0f}/100)"),
+                          f"<b>{_t(f'{notation.note} ({notation.score:.0f}/100)')}</b>"])
+        h.append(tableau(lignes_rt, [LARGEUR - 70 * mm, 35 * mm, 35 * mm], droite=(1, 2),
+                         styles_sup=[("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
+        types = sorted({a.retraitement for a in resultats_rt[-1].ajustements})
+        h.append(P(_t("Retraitements appliqués : " + ", ".join(t.lower() for t in types) + ". Crédit-bail traité "
+                      "comme un emprunt (loyers retirés des charges externes, encours ajouté aux dettes), comptes "
+                      "courants bloqués reclassés en quasi-fonds propres, dividendes déduits de la CAF. La notation et "
+                      "la capacité de remboursement ci-dessous portent sur les comptes retraités."), "petit", spaceBefore=3))
+
     h.append(titre_section(f"Détail de la notation {dernier.exercice}"))
     formats = {"capacite_remboursement": lambda x: nb(x, " ans"), "autonomie_financiere": pct, "taux_ebe": pct,
                "levier_dfn_ebe": lambda x: nb(x, " ans"), "poids_charges_financieres": pct, "liquidite_generale": nb,

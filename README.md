@@ -38,6 +38,16 @@ python analyser.py exemples/menuiserie_azur.xlsx --pdf note_credit.pdf
 python -m pytest
 ```
 
+## Retraitements bancaires
+
+Comme en banque, les comptes peuvent être retraités avant l'analyse (activé par défaut, désactivable) :
+
+- **Crédit-bail** traité comme un emprunt : loyers retirés des charges externes et répartis entre intérêts et amortissement, encours restant dû ajouté aux dettes financières. Le résultat net est inchangé, l'EBE et la CAF augmentent.
+- **Comptes courants d'associés bloqués** reclassés en quasi-fonds propres.
+- **Dividendes** déduits de la CAF, car ils ne servent pas à rembourser.
+
+Les informations nécessaires se saisissent dans la section « Informations complémentaires (annexe) » du modèle Excel. Sur l'exemple, la note 2025 passe de E (32/100) à D (40/100) une fois le crédit-bail réintégré. La comparaison sectorielle et le score de défaillance restent calculés sur les comptes bruts, pour comparer à l'identique avec les données publiques.
+
 ## Comparaison sectorielle
 
 Chaque ratio est situé parmi des entreprises comparables : même code NAF (de la sous-classe jusqu'au grand secteur si le groupe est trop petit) et même tranche de chiffre d'affaires. Les références sont les **indicateurs sectoriels financiers BCE/INPI** publiés par Bercy (percentiles 10, 25, 50, 75 et 90 de chaque ratio). Exemple : la menuiserie fictive est comparée à 104 entreprises du code NAF 16.23Z réalisant de 2 à 10 M€ de chiffre d'affaires. Sa rentabilité nette se situe parmi les 10 % les plus faibles.
@@ -106,6 +116,7 @@ analyse_credit/
   note_credit.py      # note de crédit au format PDF
   defaillance.py      # score statistique de défaillance
   secteurs.py         # comparaison sectorielle (références dans secteurs.csv.gz)
+  retraitements.py    # retraitements bancaires
   modele_defaillance.json  # paramètres du modèle (tranches et poids)
   sources/            # API Recherche d'entreprises et INPI, conversion de la liasse
 modeles/
@@ -128,7 +139,7 @@ tests/
 - [x] Étape 5 : génération de la note de crédit en PDF
 - [x] Étape 6 : modèle de prédiction des défaillances (BODACC)
 - [x] Amélioration 1 : comparaison sectorielle (Bercy)
-- [ ] Amélioration 2 : retraitements bancaires (crédit-bail, comptes courants, dividendes)
+- [x] Amélioration 2 : retraitements bancaires (crédit-bail, comptes courants, dividendes)
 - [ ] Amélioration 3 : scénario de crise (stress test)
 
 ## Licence

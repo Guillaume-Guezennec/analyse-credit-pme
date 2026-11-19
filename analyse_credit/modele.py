@@ -67,6 +67,13 @@ class ComptesAnnuels:
     autres_dettes: float = 0.0
     produits_constates_avance: float = 0.0
 
+    # ---------------- Informations complémentaires (annexe), utilisées par les retraitements bancaires ----------------
+    redevances_credit_bail: float = 0.0      # loyers de crédit-bail de l'exercice (inclus dans les charges externes)
+    encours_credit_bail: float = 0.0         # redevances restant à payer à la clôture
+    comptes_courants_bloques: float = 0.0    # dont comptes courants d'associés bloqués (inclus dans autres dettes financières)
+    dividendes_verses: float = 0.0           # dividendes distribués pendant l'exercice
+    dividendes_deduits_caf: float = 0.0      # renseigné par les retraitements : dividendes retirés de la CAF
+
     # ---------------- Totaux ----------------
     @property
     def chiffre_affaires(self) -> float:
