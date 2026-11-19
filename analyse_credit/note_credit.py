@@ -1,4 +1,4 @@
-"""Génération de la note de crédit au format PDF (4 pages, présentation de comité de crédit).
+"""Génération de la note de crédit au format PDF (5 pages, présentation de comité de crédit).
 
 Usage :
     from analyse_credit.note_credit import generer_note
@@ -25,6 +25,7 @@ from reportlab.platypus import (KeepTogether, PageBreak, Paragraph, SimpleDocTem
 from .analyse import analyser_historique
 from .commentaires import commenter
 from .defaillance import prevoir
+from .secteurs import comparer, constats_sectoriels
 from .modele import ComptesAnnuels
 from .scoring import noter
 from .simulation_pret import montant_maximal, simuler
@@ -183,7 +184,7 @@ def graphique_rentabilite(historique) -> Drawing:
     series = [("EBE", [r.ebe / 1000 for r in historique]), ("CAF", [r.caf / 1000 for r in historique]),
               ("Résultat net", [r.resultat_net / 1000 for r in historique])]
     bc = VerticalBarChart()
-    bc.x, bc.y, bc.width, bc.height = 30, 22, largeur - 40, hauteur - 48
+    bc.x, bc.y, bc.width, bc.height = 30, 18, largeur - 40, hauteur - 40
     bc.data = [v for _, v in series]
     bc.categoryAxis.categoryNames = [str(r.exercice) for r in historique]
     bas = min(0, min(min(v) for v in bc.data))
@@ -255,6 +256,8 @@ def generer_note(dossier: dict, montant: float | None = None, taux: float | None
     notation = noter(dernier)
     constats = commenter(historique)
     prevision = prevoir(dernier, comptes)
+    comparaison = comparer(dernier, comptes, (dossier.get("entreprise") or {}).get("code_naf"))
+    constats = constats + constats_sectoriels(comparaison)
     ent = dossier.get("entreprise", {})
     demande = dossier.get("demande_credit") or {}
     montant = montant if montant is not None else float(demande.get("montant") or 150_000)
@@ -385,23 +388,22 @@ def generer_note(dossier: dict, montant: float | None = None, taux: float | None
     h.append(Spacer(1, 10))
     h.append(graphique_rentabilite(historique))
 
-    # ---------------- Page 3 : notation, financement, avis
+    # ---------------- Page 3 : positionnement (secteur et risque de défaillance)
     h.append(PageBreak())
-    h.append(titre_section(f"Détail de la notation {dernier.exercice}"))
-    formats = {"capacite_remboursement": lambda x: nb(x, " ans"), "autonomie_financiere": pct, "taux_ebe": pct,
-               "levier_dfn_ebe": lambda x: nb(x, " ans"), "poids_charges_financieres": pct, "liquidite_generale": nb,
-               "rentabilite_nette": pct}
-    lignes_note = [["Critère", "Valeur", "Appréciation", "Points"]]
-    for d in notation.details:
-        fmt = formats.get(d.critere.attribut, nb)
-        lignes_note.append([_t(d.critere.nom), _t(fmt(d.valeur)), pastille(d.feu),
-                            _t(f"{_nombre(d.points, 1)} / {d.critere.poids}")])
-    lignes_note.append([f"<b>Total</b>", "", "", f"<b>{_nombre(notation.score, 0)} / 100 (note {notation.note})</b>"])
-    h.append(tableau(lignes_note, [62 * mm, 28 * mm, 34 * mm, LARGEUR - 124 * mm], droite=(1, 3),
-                     styles_sup=[("BACKGROUND", (0, -1), (-1, -1), GRIS)]))
-    h.append(P(_t("Seuils indicatifs : capacité de remboursement favorable sous 3 ans et défavorable au-delà de 5 ans, "
-                  "autonomie financière favorable au-delà de 30 %. Barème : A >= 80, B >= 65, C >= 50, D >= 35, E < 35."),
-               "petit", spaceBefore=4))
+    if comparaison and comparaison.positions:
+        h.append(titre_section("Comparaison avec le secteur"))
+        unites = {"%": "\xa0%", "ans": "\xa0ans", "jours": "\xa0j", "jours de CA": "\xa0j"}
+        lignes_s = [["Ratio (définitions de la base publique)", "Entreprise", "Médiane", "Moitié centrale", "Position"]]
+        for p in comparaison.positions:
+            u = unites.get(p.unite, "")
+            pos = pastille(p.couleur, {"vert": "Meilleur", "rouge": "Moins bon", "orange": "Un peu en dessous"}[p.couleur]) \
+                if p.couleur else ("Dans la norme" if p.sens else "Neutre")
+            lignes_s.append([_t(p.libelle.split(" (")[0]), _t(_nombre(p.valeur, 1) + u), _t(_nombre(p.mediane, 1) + u),
+                             _t(f"{_nombre(p.quantiles[1], 1)} à {_nombre(p.quantiles[3], 1)}{u}"), pos])
+        h.append(tableau(lignes_s, [58 * mm, 24 * mm, 22 * mm, 36 * mm, LARGEUR - 140 * mm], droite=(1, 2, 3),
+                         styles_sup=[("TOPPADDING", (0, 0), (-1, -1), 3.5), ("BOTTOMPADDING", (0, 0), (-1, -1), 3.5)]))
+        h.append(P(_t(f"Entreprises comparables : {comparaison.groupe.description}. Source : indicateurs sectoriels "
+                      "financiers BCE/INPI (Bercy)."), "petit", spaceBefore=3))
 
     h.append(titre_section("Score statistique de défaillance"))
 
@@ -426,6 +428,25 @@ def generer_note(dossier: dict, montant: float | None = None, taux: float | None
     h.append(P(_t("Ce score mesure le risque de procédure collective ; la note de A à E mesure la capacité à porter un "
                   "nouveau crédit. Les deux peuvent diverger."), "petit", spaceBefore=3))
 
+
+    # ---------------- Page 4 : notation et capacité de remboursement
+    h.append(PageBreak())
+    h.append(titre_section(f"Détail de la notation {dernier.exercice}"))
+    formats = {"capacite_remboursement": lambda x: nb(x, " ans"), "autonomie_financiere": pct, "taux_ebe": pct,
+               "levier_dfn_ebe": lambda x: nb(x, " ans"), "poids_charges_financieres": pct, "liquidite_generale": nb,
+               "rentabilite_nette": pct}
+    lignes_note = [["Critère", "Valeur", "Appréciation", "Points"]]
+    for d in notation.details:
+        fmt = formats.get(d.critere.attribut, nb)
+        lignes_note.append([_t(d.critere.nom), _t(fmt(d.valeur)), pastille(d.feu),
+                            _t(f"{_nombre(d.points, 1)} / {d.critere.poids}")])
+    lignes_note.append([f"<b>Total</b>", "", "", f"<b>{_nombre(notation.score, 0)} / 100 (note {notation.note})</b>"])
+    h.append(tableau(lignes_note, [62 * mm, 28 * mm, 34 * mm, LARGEUR - 124 * mm], droite=(1, 3),
+                     styles_sup=[("BACKGROUND", (0, -1), (-1, -1), GRIS)]))
+    h.append(P(_t("Seuils indicatifs : capacité de remboursement favorable sous 3 ans et défavorable au-delà de 5 ans, "
+                  "autonomie financière favorable au-delà de 30 %. Barème : A >= 80, B >= 65, C >= 50, D >= 35, E < 35."),
+               "petit", spaceBefore=4))
+
     h.append(titre_section("Capacité de remboursement"))
     lignes_fin = [
         ["", "Montant annuel"],
@@ -439,7 +460,7 @@ def generer_note(dossier: dict, montant: float | None = None, taux: float | None
     ]
     h.append(tableau(lignes_fin, [LARGEUR - 40 * mm, 40 * mm], droite=(1,)))
 
-    # ---------------- Page 4 : décision
+    # ---------------- Page 5 : décision
     h.append(PageBreak())
     h.append(titre_section("Proposition d'avis"))
     couleur_avis, texte_avis = proposition_avis(notation, sim, maximum, constats, montant)

@@ -17,6 +17,7 @@ from analyse_credit import (ComptesAnnuels, analyser_historique, calculer_sig, m
                             tableau_amortissement)
 from analyse_credit.commentaires import commenter
 from analyse_credit.defaillance import charger_modele, prevoir
+from analyse_credit.secteurs import comparer, constats_sectoriels
 from analyse_credit.export_excel import ecrire_classeur
 from analyse_credit.glossaire import GLOSSAIRE
 from analyse_credit.import_excel import lire_dossier
@@ -343,6 +344,8 @@ precedent = historique[-2] if len(historique) > 1 else None
 comptes_dernier = sorted(exercices, key=lambda e: e.exercice)[-1]
 notation = noter(dernier)
 prevision = prevoir(dernier, comptes_dernier)
+code_naf = (dossier.get("entreprise", {}).get("code_naf") or fiche.get("code_naf") or "")
+comparaison = comparer(dernier, comptes_dernier, code_naf)
 annees = [r.exercice for r in historique]
 feux = {d.critere.attribut: d.feu for d in notation.details}
 
@@ -350,7 +353,7 @@ feux = {d.critere.attribut: d.feu for d in notation.details}
 
 with onglet_synthese:
     texte_pdf, zone_pdf = st.columns([3, 1], vertical_alignment="center")
-    texte_pdf.caption("Synthèse de l'analyse. La note de crédit complète (4 pages, format comité de crédit) "
+    texte_pdf.caption("Synthèse de l'analyse. La note de crédit complète (5 pages, format comité de crédit) "
                       "reprend les paramètres de l'onglet Simulation de prêt.")
     zone_pdf = zone_pdf.empty()
     cols = st.columns([1.25, 1, 1, 1, 1])
@@ -369,7 +372,7 @@ with onglet_synthese:
 
     html(ui.section("Points clés"))
     ordre = {"negatif": 0, "vigilance": 1, "positif": 2}
-    constats = sorted(commenter(historique), key=lambda c: ordre[c.sens])
+    constats = sorted(commenter(historique) + constats_sectoriels(comparaison), key=lambda c: ordre[c.sens])
     g, d = st.columns(2)
     for i, c in enumerate(constats):
         with (g if i % 2 == 0 else d):
@@ -460,6 +463,33 @@ with onglet_ratios:
         html(ui.tableau([("Solde", False), ("Montant", True), ("% production", True)], lignes_sig))
         st.caption("En vert les éléments qui augmentent le résultat, en pêche ceux qui le diminuent, "
                    "en bleu les soldes.")
+
+    html(ui.section("Comparaison avec le secteur"))
+    if comparaison and comparaison.positions:
+        st.caption(f"Entreprises comparables : {comparaison.groupe.description}. Source : indicateurs sectoriels "
+                   "financiers BCE/INPI publiés par Bercy. Chaque point situe l'entreprise parmi ces entreprises : "
+                   "à droite, mieux que la plupart ; à gauche, moins bien." + (
+                       "" if code_naf else " Code NAF non renseigné : comparaison avec l'ensemble des entreprises."))
+        st.plotly_chart(gr.positionnement(comparaison.positions), width="stretch")
+        unites = {"%": " %", "ans": " ans", "jours": " j", "jours de CA": " j"}
+
+        def f(x, u):
+            return f"{x:,.1f}".replace(",", "\u202f").replace(".", ",").replace("-", "−") + unites.get(u, "")
+
+        lignes_sect = []
+        for p in comparaison.positions:
+            avis = ui.pastille(p.couleur, {"vert": "Meilleur que le secteur", "rouge": "Moins bon que le secteur",
+                                           "orange": "Un peu en dessous"}[p.couleur]) if p.couleur else (
+                '<span style="color:#8A96A3">Dans la norme</span>' if p.sens else '<span style="color:#8A96A3">Neutre</span>')
+            lignes_sect.append([escape(p.libelle.split(" (")[0]), f(p.valeur, p.unite), f(p.mediane, p.unite),
+                                f"{f(p.quantiles[1], p.unite)} à {f(p.quantiles[3], p.unite)}", avis])
+        html(ui.tableau([("Ratio", False), ("Entreprise", True), ("Médiane du secteur", True),
+                         ("Moitié centrale du secteur", True), ("Appréciation", False)], lignes_sect))
+        st.caption("Les ratios suivent ici les définitions de la base publique, pour comparer à l'identique. Certains "
+                   "diffèrent donc légèrement de ceux du reste de l'outil : par exemple, la capacité de remboursement "
+                   "y rapporte toutes les dettes financières à la CAF, découverts compris.")
+    else:
+        st.info("Aucune référence sectorielle disponible pour cette entreprise.")
 
     export = []
     for famille, attributs in FAMILLES.items():

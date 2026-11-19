@@ -159,3 +159,27 @@ def deciles_defaillance(deciles: list[dict]):
     fig.update_xaxes(title=dict(text="Décile de score : 1 = entreprises les plus sûres, 10 = les plus risquées",
                                 font=dict(size=12)))
     return fig
+
+
+def positionnement(positions):
+    """Position de l'entreprise dans son secteur, sur une échelle commune de 0 à 100 orientée « plus à droite = mieux »."""
+    fig = go.Figure()
+    for x0, x1, couleur in ((0, 25, "#FDECEC"), (25, 75, "#F4F6F8"), (75, 100, "#F1F9E6")):
+        fig.add_vrect(x0=x0, x1=x1, fillcolor=couleur, line_width=0, layer="below")
+    libelles = [p.libelle.split(" (")[0] + ("  (neutre)" if p.sens == 0 else "") for p in positions]
+    x = [p.score for p in positions]
+    unites = {"%": " %", "ans": " ans", "jours": " j", "jours de CA": " j de CA"}
+    texte = [f"{_fr(p.valeur, 1)}{unites.get(p.unite, '')} (médiane {_fr(p.mediane, 1)}{unites.get(p.unite, '')})<br>{p.lecture}"
+             for p in positions]
+    fig.add_scatter(x=x, y=libelles, mode="markers", customdata=texte,
+                    marker=dict(size=15, color=SERIES[0]["fond"], line=dict(color=SERIES[0]["trait"], width=2.5)),
+                    hovertemplate="<b>%{y}</b><br>%{customdata}<extra></extra>", showlegend=False)
+    fig.add_vline(x=50, line_dash="dot", line_color="#9AA5B1", line_width=1)
+    fig = _mise_en_page(fig, "Position de l'entreprise dans son secteur", "", hauteur=60 + 38 * len(positions))
+    fig.update_xaxes(type="linear", range=[0, 100], tickvals=[0, 25, 50, 75, 100],
+                     ticktext=["Moins bien", "Quart le moins bon", "Médiane", "Quart le meilleur", "Mieux"], showgrid=False,
+                     zeroline=False)
+    fig.update_yaxes(type="category", autorange="reversed", showgrid=True, gridcolor="#EEF1F4", zeroline=False,
+                     title=None, tickfont=dict(size=12, color=ENCRE))
+    fig.update_layout(hovermode="closest", margin=dict(l=8, r=16, t=44, b=8))
+    return fig

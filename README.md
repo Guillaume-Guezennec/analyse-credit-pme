@@ -12,7 +12,7 @@ Outil Python qui reproduit l'analyse financière d'un chargé d'affaires entrepr
 - **Ratios bancaires** : autonomie financière, gearing, levier DFN/EBE, capacité de remboursement, délais clients et fournisseurs, liquidité
 - **Notation du risque** de A à E, avec des feux tricolores par critère
 - **Simulation d'un nouveau prêt** : mensualité, tableau d'amortissement, taux de couverture des annuités par la CAF, montant maximal finançable
-- **Note de crédit en PDF** (4 pages, format comité de crédit) : synthèse, points clés, analyse sur trois exercices, détail de la notation, score de défaillance, capacité de remboursement et proposition d'avis
+- **Note de crédit en PDF** (5 pages, format comité de crédit) : synthèse, points clés, analyse sur trois exercices, comparaison sectorielle, score de défaillance, détail de la notation, capacité de remboursement et proposition d'avis
 
 > Projet réalisé avec l'aide de Claude (Anthropic).
 
@@ -37,6 +37,12 @@ python analyser.py exemples/menuiserie_azur.xlsx
 python analyser.py exemples/menuiserie_azur.xlsx --pdf note_credit.pdf
 python -m pytest
 ```
+
+## Comparaison sectorielle
+
+Chaque ratio est situé parmi des entreprises comparables : même code NAF (de la sous-classe jusqu'au grand secteur si le groupe est trop petit) et même tranche de chiffre d'affaires. Les références sont les **indicateurs sectoriels financiers BCE/INPI** publiés par Bercy (percentiles 10, 25, 50, 75 et 90 de chaque ratio). Exemple : la menuiserie fictive est comparée à 104 entreprises du code NAF 16.23Z réalisant de 2 à 10 M€ de chiffre d'affaires. Sa rentabilité nette se situe parmi les 10 % les plus faibles.
+
+Pour mettre à jour les références : `python outils/telecharger_secteurs.py` puis `python outils/preparer_secteurs.py`.
 
 ## Prédiction des défaillances
 
@@ -99,6 +105,7 @@ analyse_credit/
   glossaire.py        # définition de chaque indicateur (FR / EN)
   note_credit.py      # note de crédit au format PDF
   defaillance.py      # score statistique de défaillance
+  secteurs.py         # comparaison sectorielle (références dans secteurs.csv.gz)
   modele_defaillance.json  # paramètres du modèle (tranches et poids)
   sources/            # API Recherche d'entreprises et INPI, conversion de la liasse
 modeles/
@@ -120,6 +127,9 @@ tests/
 - [x] Étape 4 : application web (Streamlit) avec graphiques
 - [x] Étape 5 : génération de la note de crédit en PDF
 - [x] Étape 6 : modèle de prédiction des défaillances (BODACC)
+- [x] Amélioration 1 : comparaison sectorielle (Bercy)
+- [ ] Amélioration 2 : retraitements bancaires (crédit-bail, comptes courants, dividendes)
+- [ ] Amélioration 3 : scénario de crise (stress test)
 
 ## Licence
 
