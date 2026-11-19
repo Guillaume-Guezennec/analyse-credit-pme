@@ -12,7 +12,7 @@ Outil Python qui reproduit l'analyse financière d'un chargé d'affaires entrepr
 - **Ratios bancaires** : autonomie financière, gearing, levier DFN/EBE, capacité de remboursement, délais clients et fournisseurs, liquidité
 - **Notation du risque** de A à E, avec des feux tricolores par critère
 - **Simulation d'un nouveau prêt** : mensualité, tableau d'amortissement, taux de couverture des annuités par la CAF, montant maximal finançable
-- **Note de crédit en PDF** (5 pages, format comité de crédit) : synthèse, points clés, analyse sur trois exercices, comparaison sectorielle, score de défaillance, détail de la notation, capacité de remboursement et proposition d'avis
+- **Note de crédit en PDF** (5 pages, format comité de crédit) : synthèse, points clés, analyse sur trois exercices, comparaison sectorielle, score de défaillance, retraitements, détail de la notation, scénario de crise, capacité de remboursement et proposition d'avis
 
 > Projet réalisé avec l'aide de Claude (Anthropic).
 
@@ -47,6 +47,10 @@ Comme en banque, les comptes peuvent être retraités avant l'analyse (activé p
 - **Dividendes** déduits de la CAF, car ils ne servent pas à rembourser.
 
 Les informations nécessaires se saisissent dans la section « Informations complémentaires (annexe) » du modèle Excel. Sur l'exemple, la note 2025 passe de E (32/100) à D (40/100) une fois le crédit-bail réintégré. La comparaison sectorielle et le score de défaillance restent calculés sur les comptes bruts, pour comparer à l'identique avec les données publiques.
+
+## Scénario de crise
+
+L'onglet Simulation de prêt teste la résistance du financement à une baisse d'activité : les achats consommés baissent au même rythme que les ventes, les charges externes pour leur part variable (réglable), tandis que salaires, impôts et taxes, amortissements et frais financiers restent fixes. Un allongement du délai clients peut s'ajouter. L'outil calcule le **seuil de résistance**, la baisse de chiffre d'affaires maximale qui garde le taux de couverture au-dessus de 1,25. Sur l'exemple, 10 % de chiffre d'affaires en moins font passer l'EBE de 201 k€ à 56 k€ : c'est l'effet de levier des charges fixes.
 
 ## Comparaison sectorielle
 
@@ -117,6 +121,7 @@ analyse_credit/
   defaillance.py      # score statistique de défaillance
   secteurs.py         # comparaison sectorielle (références dans secteurs.csv.gz)
   retraitements.py    # retraitements bancaires
+  stress.py           # scénario de crise et seuil de résistance
   modele_defaillance.json  # paramètres du modèle (tranches et poids)
   sources/            # API Recherche d'entreprises et INPI, conversion de la liasse
 modeles/
@@ -140,7 +145,7 @@ tests/
 - [x] Étape 6 : modèle de prédiction des défaillances (BODACC)
 - [x] Amélioration 1 : comparaison sectorielle (Bercy)
 - [x] Amélioration 2 : retraitements bancaires (crédit-bail, comptes courants, dividendes)
-- [ ] Amélioration 3 : scénario de crise (stress test)
+- [x] Amélioration 3 : scénario de crise (stress test)
 
 ## Licence
 

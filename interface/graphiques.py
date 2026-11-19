@@ -183,3 +183,33 @@ def positionnement(positions):
                      title=None, tickfont=dict(size=12, color=ENCRE))
     fig.update_layout(hovermode="closest", margin=dict(l=8, r=16, t=44, b=8))
     return fig
+
+
+def courbe_stress(points, baisse_choisie: float, seuil: float | None):
+    """Taux de couverture des remboursements selon la baisse du chiffre d'affaires."""
+    x = [b * 100 for b, _ in points]
+    y = [max(v, 0) if v is not None else 0 for _, v in points]
+    fig = go.Figure()
+    fig.add_hrect(y0=1.25, y1=max(max(y), 1.6) * 1.1, fillcolor="#F1F9E6", line_width=0, layer="below")
+    fig.add_hrect(y0=1.0, y1=1.25, fillcolor="#FEF6E0", line_width=0, layer="below")
+    fig.add_hrect(y0=0, y1=1.0, fillcolor="#FDECEC", line_width=0, layer="below")
+    fig.add_scatter(x=x, y=y, mode="lines", line=dict(color=SERIES[0]["trait"], width=3, shape="spline", smoothing=0.5),
+                    hovertemplate="Baisse du CA : %{x:.0f} %<br>Taux de couverture : %{y:.2f} x<extra></extra>",
+                    showlegend=False)
+    proche = min(points, key=lambda p: abs(p[0] - baisse_choisie))
+    fig.add_scatter(x=[baisse_choisie * 100], y=[max(proche[1] or 0, 0)], mode="markers", showlegend=False,
+                    marker=dict(size=13, color=SERIES[1]["fond"], line=dict(color=SERIES[1]["trait"], width=2.5)),
+                    hovertemplate="Scénario choisi<extra></extra>")
+    for niveau, texte in ((1.25, "Seuil retenu : 1,25 x"), (1.0, "La CAF couvre tout juste les remboursements")):
+        fig.add_hline(y=niveau, line_dash="dash", line_width=1.2, line_color=ENCRE_SECONDAIRE,
+                      annotation_text=texte, annotation_position="top right",
+                      annotation_font=dict(size=11, color=ENCRE_SECONDAIRE))
+    if seuil is not None:
+        fig.add_vline(x=seuil * 100, line_dash="dot", line_width=1.2, line_color=SERIES[0]["trait"])
+    fig = _mise_en_page(fig, "Taux de couverture selon la baisse du chiffre d'affaires", "taux de couverture (x)",
+                        hauteur=330)
+    fig.update_xaxes(type="linear", title=dict(text="Baisse du chiffre d'affaires (%)", font=dict(size=12)),
+                     ticksuffix=" %", range=[0, max(x)])
+    fig.update_yaxes(rangemode="tozero")
+    fig.update_layout(hovermode="closest")
+    return fig

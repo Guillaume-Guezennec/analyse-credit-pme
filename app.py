@@ -19,6 +19,7 @@ from analyse_credit.commentaires import commenter
 from analyse_credit.defaillance import charger_modele, prevoir
 from analyse_credit.secteurs import comparer, constats_sectoriels
 from analyse_credit.retraitements import Parametres, retraiter_tout
+from analyse_credit.stress import Scenario, couverture_selon_baisse, seuil_resistance, tester
 from analyse_credit.export_excel import ecrire_classeur
 from analyse_credit.glossaire import GLOSSAIRE
 from analyse_credit.import_excel import lire_dossier
@@ -621,6 +622,57 @@ with onglet_pret:
                                           Capital=("capital", "sum"), Restant=("capital_restant", "last"))
     g2.plotly_chart(gr.amortissement(par_an), width="stretch")
 
+    html(ui.section("Scénario de crise"))
+    st.caption("Que devient la capacité de remboursement si l'activité baisse ? Les achats consommés baissent au même "
+               "rythme que les ventes, les charges externes pour leur seule part variable ; salaires, impôts et taxes, "
+               "amortissements et frais financiers restent fixes.")
+    c1, c2, c3 = st.columns(3)
+    baisse = c1.slider("Baisse du chiffre d'affaires", 0, 40, 10, 1, format="%d %%") / 100
+    part_var = c2.slider("Part variable des charges externes", 0, 100, 50, 5, format="%d %%",
+                         help="Sous-traitance, transport, énergie de production : variables. Loyers, assurances, "
+                              "honoraires : fixes.") / 100
+    delai = c3.slider("Allongement du délai clients", 0, 60, 0, 5, format="%d jours",
+                      help="Les clients paient plus tard : la trésorerie se dégrade, sans effet sur la CAF.")
+    comptes_prec = exercices[-2] if len(exercices) > 1 else None
+    crise = tester(comptes_dernier, comptes_prec, Scenario(baisse, part_var, delai), montant, taux, duree, residuelle)
+    seuil = seuil_resistance(comptes_dernier, comptes_prec, montant, taux, duree, residuelle, part_var)
+
+    def couleur_couv(x):
+        return "rouge" if x is None or x < 1 else "orange" if x < 1.25 else "vert"
+
+    lignes_crise = []
+    for lib, a, b in [("Chiffre d'affaires", keur(dernier.chiffre_affaires), keur(crise.ratios.chiffre_affaires)),
+                      ("EBE", keur(dernier.ebe), keur(crise.ratios.ebe)),
+                      ("Taux d'EBE", pct(dernier.taux_ebe), pct(crise.ratios.taux_ebe)),
+                      ("CAF", keur(dernier.caf), keur(crise.ratios.caf)),
+                      ("Trésorerie nette", keur(dernier.tresorerie_nette), keur(crise.ratios.tresorerie_nette))]:
+        lignes_crise.append([escape(lib), a, f"<b>{b}</b>"])
+    lignes_crise.append(["Taux de couverture", ui.pastille(couleur_couv(s.taux_couverture), nb(s.taux_couverture, " x")),
+                         ui.pastille(couleur_couv(crise.simulation.taux_couverture),
+                                     nb(crise.simulation.taux_couverture if crise.ratios.caf > 0 else 0, " x"))])
+    lignes_crise.append(["Note", f"{notation.note} ({notation.score:.0f}/100)",
+                         f"<b>{crise.notation.note} ({crise.notation.score:.0f}/100)</b>"])
+    gc, dc = st.columns([1, 1.25])
+    with gc:
+        html(ui.tableau([("Indicateur", False), ("Situation actuelle", True), (f"Crise (−{baisse * 100:.0f} %)", True)],
+                        lignes_crise))
+        st.write("")
+        if seuil is None:
+            html(ui.bloc("rouge", "Le taux de couverture est déjà sous 1,25 sans baisse d'activité : le financement "
+                                  "n'a aucune marge de résistance.", "Seuil de résistance"))
+        else:
+            couleur_seuil = "vert" if seuil >= 0.15 else "orange" if seuil >= 0.05 else "rouge"
+            html(ui.bloc(couleur_seuil, f"Le financement reste soutenable tant que la baisse du chiffre d'affaires ne "
+                                        f"dépasse pas {seuil * 100:.0f} %.",
+                         "Seuil de résistance"))
+        if delai:
+            st.caption(f"L'allongement de {delai} jours du délai clients consomme environ {keur(crise.besoin_tresorerie)} "
+                       "de trésorerie supplémentaire (y compris la baisse de résultat).")
+    with dc:
+        st.plotly_chart(gr.courbe_stress(couverture_selon_baisse(comptes_dernier, comptes_prec, montant, taux, duree,
+                                                                 residuelle, part_var), baisse, seuil),
+                        width="stretch")
+
     html(ui.section("Sensibilité du taux de couverture"))
     st.caption("Taux de couverture obtenu pour le même montant, selon la durée et le taux. "
                "Vert : au moins 1,25 x ; jaune : entre 1 et 1,25 x ; rouge : moins de 1 x.")
@@ -646,7 +698,8 @@ with onglet_pret:
 # ----------------------------------------------------------------------------- note de crédit PDF
 
 try:
-    pdf = generer_note(dossier, montant, taux, duree, residuelle, retraitements=parametres_rt)
+    pdf = generer_note(dossier, montant, taux, duree, residuelle, retraitements=parametres_rt,
+                       scenario=Scenario(baisse, part_var, delai))
     nom_pdf = "note_credit_" + "".join(ch if ch.isalnum() else "_" for ch in
                                        (dossier.get("entreprise", {}).get("raison_sociale") or "pme"))[:40] + ".pdf"
     zone_pdf.download_button("Télécharger la note de crédit (PDF)", pdf, nom_pdf, mime="application/pdf",

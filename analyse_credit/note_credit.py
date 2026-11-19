@@ -27,6 +27,7 @@ from .commentaires import commenter
 from .defaillance import prevoir
 from .secteurs import comparer, constats_sectoriels
 from .retraitements import Parametres, retraiter_tout
+from .stress import Scenario, seuil_resistance, tester
 from .modele import ComptesAnnuels
 from .scoring import noter
 from .simulation_pret import montant_maximal, simuler
@@ -250,7 +251,7 @@ def proposition_avis(notation, simulation, maximum, constats, montant) -> tuple[
 def generer_note(dossier: dict, montant: float | None = None, taux: float | None = None,
                  duree_mois: int | None = None, duree_residuelle_ans: float = 5.0,
                  auteur: str = "", date_note: date | None = None,
-                 retraitements: Parametres | None = Parametres()) -> bytes:
+                 retraitements: Parametres | None = Parametres(), scenario: Scenario | None = Scenario()) -> bytes:
     """retraitements=None : analyse sur les comptes bruts, sans retraitement bancaire."""
     bruts = sorted((ComptesAnnuels.depuis_dict(e) for e in dossier["exercices"]), key=lambda e: e.exercice)
     historique_brut = analyser_historique(bruts)
@@ -491,10 +492,45 @@ def generer_note(dossier: dict, montant: float | None = None, taux: float | None
     ]
     h.append(tableau(lignes_fin, [LARGEUR - 40 * mm, 40 * mm], droite=(1,)))
 
-    # ---------------- Page 5 : décision
+    # ---------------- Page 5 : scénario de crise et décision
     h.append(PageBreak())
+    seuil = None
+    if scenario is not None:
+        precedent = exercices[-2] if len(exercices) > 1 else None
+        crise = tester(comptes, precedent, scenario, montant, taux, duree_mois, duree_residuelle_ans)
+        seuil = seuil_resistance(comptes, precedent, montant, taux, duree_mois, duree_residuelle_ans,
+                                 scenario.part_variable_charges_externes)
+        h.append(titre_section(f"Scénario de crise : chiffre d'affaires en baisse de {scenario.baisse_ca * 100:.0f} %"))
+        couv_crise = crise.simulation.taux_couverture if crise.ratios.caf > 0 else 0.0
+        lignes_c = [["Indicateur", "Situation actuelle", "Scénario de crise"],
+                    ["Chiffre d'affaires", _t(keur(dernier.chiffre_affaires)), _t(keur(crise.ratios.chiffre_affaires))],
+                    ["EBE (taux d'EBE)", _t(f"{keur(dernier.ebe)} ({pct(dernier.taux_ebe)})"),
+                     _t(f"{keur(crise.ratios.ebe)} ({pct(crise.ratios.taux_ebe)})")],
+                    ["CAF", _t(keur(dernier.caf)), _t(keur(crise.ratios.caf))],
+                    ["Taux de couverture", _t(nb(sim.taux_couverture, " x")), _t(nb(couv_crise, " x"))],
+                    ["Note", _t(f"{notation.note} ({notation.score:.0f}/100)"),
+                     _t(f"{crise.notation.note} ({crise.notation.score:.0f}/100)")]]
+        h.append(tableau(lignes_c, [LARGEUR - 80 * mm, 40 * mm, 40 * mm], droite=(1, 2),
+                         styles_sup=[("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
+        if seuil is None:
+            texte_seuil = ("Seuil de résistance : aucun. Le taux de couverture est déjà inférieur à 1,25 sans baisse "
+                           "d'activité.")
+        else:
+            texte_seuil = (f"Seuil de résistance : le financement reste soutenable tant que la baisse du chiffre "
+                           f"d'affaires ne dépasse pas {seuil * 100:.0f} %.")
+        h.append(P(_t(texte_seuil + f" Hypothèses : achats consommés variables, charges externes variables à "
+                      f"{scenario.part_variable_charges_externes * 100:.0f} %, salaires, impôts et taxes, amortissements et "
+                      "frais financiers fixes."), "petit", spaceBefore=3))
+
     h.append(titre_section("Proposition d'avis"))
     couleur_avis, texte_avis = proposition_avis(notation, sim, maximum, constats, montant)
+    if seuil is not None:
+        texte_avis += f" Le financement résiste à une baisse du chiffre d'affaires de {seuil * 100:.0f} % au plus."
+        if seuil < 0.10 and couleur_avis == "vert":
+            couleur_avis = "orange"
+            texte_avis = texte_avis.replace("Proposition d'avis favorable.", "Proposition d'avis favorable sous conditions.")
+            texte_avis += (" Cette marge est faible : une baisse d'activité modérée suffirait à rendre les remboursements "
+                           "difficiles. À sécuriser par une durée plus longue, un montant réduit ou des garanties.")
     h.append(bloc(couleur_avis, texte_avis, "Proposition générée par l'outil, à valider"))
     h.append(Spacer(1, 8))
     lignes_vides = [[P("Avis du chargé d'affaires", "petit", fontName="Helvetica-Bold")]] + [[""] for _ in range(8)] + [
