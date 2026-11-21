@@ -357,7 +357,7 @@ with onglet_projet:
 
 # ----------------------------------------------------------------------------- absence de données
 
-if info:
+if info and historique:
     with onglet_synthese:
         st.info(info)
 if avertissements:
@@ -370,8 +370,16 @@ if avertissements:
                                f"{fiche.get('siren', 'dossier')}.xlsx")
 
 if not historique:
-    message = erreur or ("Téléchargez le modèle, remplissez-le avec la liasse fiscale, puis déposez-le dans la barre latérale."
-                         if source == "Fichier Excel" else "Saisissez un SIREN dans la barre latérale.")
+    if erreur:
+        message = erreur
+    elif source == "Fichier Excel":
+        message = "Téléchargez le modèle, remplissez-le avec la liasse fiscale, puis déposez-le dans la barre latérale."
+    elif fiche:
+        message = ("Entreprise trouvée, mais ses comptes détaillés ne sont pas récupérés dans cette version en ligne "
+                   "(accès à l'API de l'INPI non configuré). Seuls les chiffres de l'annuaire sont affichés ci-dessous. "
+                   "Pour voir une analyse complète, choisissez l'exemple ou importez un fichier Excel.")
+    else:
+        message = info or "Saisissez un SIREN dans la barre latérale."
     for onglet in (onglet_synthese, onglet_ratios, onglet_pret):
         with onglet:
             (st.error if erreur else st.info)(message)
